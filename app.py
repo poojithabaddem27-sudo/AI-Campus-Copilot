@@ -29,7 +29,7 @@ from utils.map_renderer import (
     render_realtime_gps_navigation_app,
     render_official_viit_interactive_map
 )
-from utils.ai_helper import generate_campus_response, summarize_study_material
+from utils.ai_helper import generate_campus_response, summarize_study_material, get_gemini_api_key
 
 # 1. Page Configuration
 st.set_page_config(
@@ -150,35 +150,14 @@ with st.sidebar:
     st.divider()
     
     st.subheader("⚙️ AI Configuration")
-    api_key_input = st.text_input(
-        "Gemini API Key (Optional)",
-        type="password",
-        help="Paste your Gemini API key to enable AI conversational answers.",
-        value=st.session_state.get("api_key", "")
-    )
-    if api_key_input:
-        st.session_state["api_key"] = api_key_input
-        st.success("API Key Active!", icon="⚡")
+    active_key = get_gemini_api_key()
+    if active_key:
+        st.success("Gemini API Key loaded securely from Streamlit Secrets!", icon="⚡")
     else:
-        st.info("Running in Single DB Mode.", icon="ℹ️")
+        st.warning("⚠️ GEMINI_API_KEY is not configured in Streamlit Secrets (`.streamlit/secrets.toml`).\n\nAI is running in Grounded Campus Database Mode.", icon="⚠️")
 
     st.divider()
 
-    with st.expander("🛰️ **GPS Coordinates Manager**"):
-        st.caption("View or update recorded Latitudes & Longitudes:")
-        gps_dict = load_gps_coords()
-        selected_loc_edit = st.selectbox("Select Building:", list(gps_dict.keys()))
-        if selected_loc_edit:
-            cur_coords = gps_dict[selected_loc_edit]
-            c_lat = st.number_input("Latitude", value=float(cur_coords.get("lat", 0.0)), format="%.6f")
-            c_lng = st.number_input("Longitude", value=float(cur_coords.get("lng", 0.0)), format="%.6f")
-            if st.button("💾 Save Coordinates"):
-                gps_dict[selected_loc_edit] = {"lat": c_lat, "lng": c_lng}
-                if save_gps_coords(gps_dict):
-                    st.success(f"Saved coordinates for {selected_loc_edit}!")
-                    st.rerun()
-
-    st.divider()
 
     if st.button("🔄 Reset Conversation", use_container_width=True):
         st.session_state.messages = [
@@ -203,8 +182,8 @@ st.markdown(f"""
                 <div class="stat-label">Detailed Indoor Plans</div>
             </div>
             <div class="stat-card" style="flex: 1;">
-                <div class="stat-num">watchPosition()</div>
-                <div class="stat-label">Real GPS Tracking</div>
+                <div class="stat-num">Navigation</div>
+                <div class="stat-label">Campus Route Finder</div>
             </div>
         </div>
     </div>
@@ -223,61 +202,48 @@ tab_route, tab_chat, tab_dir, tab_floors, tab_study = st.tabs([
 # TAB 1: CAMPUS ROUTE FINDER (OFFICIAL VIIT DIGITAL VECTOR CAMPUS MAP)
 # ==============================================================================
 with tab_route:
-    st.subheader("🧭 Real-Time GPS Campus Route Finder & Digital Map")
-    st.write("Source of truth digital interactive map of **Vignan's Institute of Information Technology**. Click/tap any building, ground, or facility to view details, navigate, or view floor plans.")
+    st.subheader("🧭 Campus Route Finder & Digital Interactive Map")
+    st.write("Source of truth digital interactive map of **Vignan's Institute of Information Technology**. Select your starting campus location and target destination to view the route, walking distance, and floor plans.")
 
-    # Starting Location Options (GPS vs Manual Entry)
+    # Starting Location & Target Destination Selection
     col_nav1, col_nav2 = st.columns([1, 1])
-    
-    with col_nav1:
-        start_mode = st.radio(
-            "📍 Choose Starting Location Method:",
-            ["📍 Use My Current Location (GPS)", "✍️ Enter Starting Location Manually"],
-            horizontal=True
-        )
 
     viit_location_names = sorted(list(VIIT_CAMPUS_LOCATIONS.keys()))
-    
-    start_name = "Main Entrance"
-    start_xy = (380, 450)
-    start_gps = {"lat": 0.0, "lng": 0.0}
 
-    if start_mode == "✍️ Enter Starting Location Manually":
-        with col_nav2:
-            start_choice = st.selectbox(
-                "🚩 Select Starting Location:",
-                ["Main Entrance"] + [n for n in viit_location_names if n != "Main Entrance"] + ["Other / Enter location manually"]
-            )
-            if start_choice == "Other / Enter location manually":
-                manual_start_name = st.text_input("Type manual starting location name:", value="Back Gate")
-                start_name = manual_start_name if manual_start_name else "Manual Start"
-                start_xy = (680, 60)
-                start_gps = {"lat": 0.0, "lng": 0.0}
-            else:
-                start_name = start_choice
-                s_info = VIIT_CAMPUS_LOCATIONS.get(start_name, VIIT_CAMPUS_LOCATIONS["Main Entrance"])
-                start_xy = (s_info["x"], s_info["y"])
-                start_gps = {"lat": s_info.get("lat", 0.0), "lng": s_info.get("lng", 0.0)}
+    with col_nav1:
+        start_choice = st.selectbox(
+            "🚩 Select Starting Campus Location:",
+            ["Main Entrance"] + [n for n in viit_location_names if n != "Main Entrance"] + ["Other / Enter location manually"]
+        )
+        if start_choice == "Other / Enter location manually":
+            manual_start_name = st.text_input("Type starting location name:", value="Back Gate")
+            start_name = manual_start_name if manual_start_name else "Manual Start"
+            start_xy = (680, 60)
+        else:
+            start_name = start_choice
+            s_info = VIIT_CAMPUS_LOCATIONS.get(start_name, VIIT_CAMPUS_LOCATIONS["Main Entrance"])
+            start_xy = (s_info["x"], s_info["y"])
 
-    # Target Destination Selection Dropdown
-    dest_select = st.selectbox(
-        "🎯 Select Target Destination:",
-        viit_location_names,
-        index=viit_location_names.index("Main Block") if "Main Block" in viit_location_names else 0
-    )
+    with col_nav2:
+        dest_select = st.selectbox(
+            "🎯 Select Target Destination:",
+            viit_location_names,
+            index=viit_location_names.index("Main Block") if "Main Block" in viit_location_names else 0
+        )
+        dest_info = VIIT_CAMPUS_LOCATIONS.get(dest_select, VIIT_CAMPUS_LOCATIONS["Main Block"])
+        dest_xy = (dest_info["x"], dest_info["y"])
 
-    dest_info = VIIT_CAMPUS_LOCATIONS.get(dest_select, VIIT_CAMPUS_LOCATIONS["Main Block"])
-    dest_xy = (dest_info["x"], dest_info["y"])
-    dest_gps = {"lat": dest_info.get("lat", 0.0), "lng": dest_info.get("lng", 0.0)}
+    if st.button("🚀 Find Route & Show Digital Campus Map", type="primary", use_container_width=True):
+        st.success(f"Showing Campus Route: **{start_name}** ➔ **{dest_select}**")
 
     st.markdown("---")
 
     # Render Official VIIT Interactive Digital Campus Map Component
     realtime_nav_html = render_realtime_gps_navigation_app(
-        dest_select, dest_xy, dest_gps,
-        start_name=start_name, start_xy=start_xy, start_gps=start_gps
+        dest_select, dest_xy, {},
+        start_name=start_name, start_xy=start_xy, start_gps={}
     )
-    components.html(realtime_nav_html, height=625, scrolling=False)
+    components.html(realtime_nav_html, height=635, scrolling=False)
 
 # ==============================================================================
 # TAB 2: AI ASSISTANT (Chatbot)
@@ -310,7 +276,7 @@ with tab_chat:
         with st.chat_message("user"):
             st.markdown(target_query)
 
-        api_key = st.session_state.get("api_key", None)
+        api_key = get_gemini_api_key()
         with st.chat_message("assistant"):
             with st.spinner("Searching official VIIT floor database..."):
                 ai_response = generate_campus_response(target_query, api_key=api_key)
@@ -474,7 +440,7 @@ with tab_study:
         if not content_to_analyze:
             st.warning("Please upload a file or paste text first.")
         else:
-            api_key = st.session_state.get("api_key", None)
+            api_key = get_gemini_api_key()
             with st.spinner("Generating study guide & quiz..."):
                 summary_output = summarize_study_material(content_to_analyze, api_key=api_key)
                 st.markdown("---")

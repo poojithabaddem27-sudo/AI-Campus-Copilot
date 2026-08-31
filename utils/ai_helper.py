@@ -1,5 +1,6 @@
 import os
 import re
+import streamlit as st
 from data.floor_locations import FLOOR_LOCATIONS, get_location_icon
 from utils.campus_db_helper import (
     get_campus_context_for_prompt,
@@ -16,12 +17,28 @@ try:
 except ImportError:
     GENAI_AVAILABLE = False
 
+def get_gemini_api_key():
+    """Retrieves GEMINI_API_KEY safely from Streamlit Secrets or environment variables."""
+    try:
+        if hasattr(st, "secrets") and "GEMINI_API_KEY" in st.secrets and st.secrets["GEMINI_API_KEY"]:
+            key = str(st.secrets["GEMINI_API_KEY"]).strip()
+            if key:
+                return key
+    except Exception as e:
+        print(f"Streamlit secrets lookup note: {e}")
+
+    env_key = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
+    if env_key and str(env_key).strip():
+        return str(env_key).strip()
+
+    return None
+
 def get_genai_client(api_key=None):
-    """Initializes and returns a Google GenAI Client if API key is present."""
+    """Initializes and returns a Google GenAI Client if API key is present in Streamlit Secrets."""
     if not GENAI_AVAILABLE:
         return None
 
-    key = api_key or os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
+    key = api_key or get_gemini_api_key()
     if not key:
         return None
 
@@ -159,7 +176,7 @@ def summarize_study_material(text_content, api_key=None):
             f"• **Word Count:** {len(text_content.split())} words\n"
             f"• **Lines:** {len(lines)} lines\n\n"
             f"**Preview:** {preview}...\n\n"
-            "💡 *Provide a Gemini API Key in the sidebar for automated key takeaway extraction & quiz generation!*"
+            "💡 *Configure `GEMINI_API_KEY` in Streamlit Secrets (`.streamlit/secrets.toml`) for automated key takeaway extraction & quiz generation!*"
         )
 
     prompt = (

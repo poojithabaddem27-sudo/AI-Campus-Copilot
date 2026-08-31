@@ -9,19 +9,24 @@ VIIT_CAMPUS_LOCATIONS = {
         "type": "Entrance / Gate",
         "x": 380,
         "y": 450,
-        "lat": 0.0,
-        "lng": 0.0,
         "icon": "🚪",
         "has_floor_map": False,
         "description": "Primary gate & security checkpoint of VIIT campus."
+    },
+    "Main Road to Narva": {
+        "name": "Main Road to Narva",
+        "type": "Campus Approach Road",
+        "x": 200,
+        "y": 480,
+        "icon": "🛣️",
+        "has_floor_map": False,
+        "description": "Main public road connecting VIIT campus towards Narva."
     },
     "Main Block": {
         "name": "Main Block (Academic Building)",
         "type": "Academic & Administrative",
         "x": 425,
         "y": 320,
-        "lat": 0.0,
-        "lng": 0.0,
         "icon": "🏢",
         "has_floor_map": True,
         "description": "Contains 1st–4th Floors: Vayu, Aakash, Prudhvi, Teja, Varun, Agni & G Block (Library, Computing Center, AKCNB)."
@@ -31,8 +36,6 @@ VIIT_CAMPUS_LOCATIONS = {
         "type": "Academic Building",
         "x": 170,
         "y": 120,
-        "lat": 0.0,
-        "lng": 0.0,
         "icon": "💊",
         "has_floor_map": False,
         "description": "Vignan Institute of Pharmaceutical Technology."
@@ -42,8 +45,6 @@ VIIT_CAMPUS_LOCATIONS = {
         "type": "Sports Facility",
         "x": 140,
         "y": 275,
-        "lat": 0.0,
-        "lng": 0.0,
         "icon": "🏏",
         "has_floor_map": False,
         "description": "Full-size campus cricket field with turf pitches."
@@ -53,8 +54,6 @@ VIIT_CAMPUS_LOCATIONS = {
         "type": "Sports Facility",
         "x": 440,
         "y": 110,
-        "lat": 0.0,
-        "lng": 0.0,
         "icon": "⚽",
         "has_floor_map": False,
         "description": "Main football pitch & athletics track."
@@ -64,8 +63,6 @@ VIIT_CAMPUS_LOCATIONS = {
         "type": "Sports Facility",
         "x": 450,
         "y": 405,
-        "lat": 0.0,
-        "lng": 0.0,
         "icon": "🏀",
         "has_floor_map": False,
         "description": "Outdoor synthetic basketball court."
@@ -75,30 +72,42 @@ VIIT_CAMPUS_LOCATIONS = {
         "type": "Sports Facility",
         "x": 410,
         "y": 405,
-        "lat": 0.0,
-        "lng": 0.0,
         "icon": "🏐",
         "has_floor_map": False,
         "description": "Outdoor volleyball court."
+    },
+    "Tennis Court": {
+        "name": "Tennis Court",
+        "type": "Sports Facility",
+        "x": 535,
+        "y": 405,
+        "icon": "🎾",
+        "has_floor_map": False,
+        "description": "Outdoor lawn tennis court."
     },
     "Indoor Sports Hall": {
         "name": "Indoor Sports Hall & Badminton Court",
         "type": "Sports Facility",
         "x": 490,
         "y": 405,
-        "lat": 0.0,
-        "lng": 0.0,
         "icon": "🏸",
         "has_floor_map": False,
         "description": "Indoor hall for badminton & table tennis."
+    },
+    "Outdoor Badminton Court": {
+        "name": "Outdoor Badminton Court",
+        "type": "Sports Facility",
+        "x": 575,
+        "y": 405,
+        "icon": "🏸",
+        "has_floor_map": False,
+        "description": "Open outdoor badminton court."
     },
     "Girls Hostel": {
         "name": "Girls Hostel & Mess",
         "type": "Residential",
         "x": 680,
         "y": 160,
-        "lat": 0.0,
-        "lng": 0.0,
         "icon": "🏠",
         "has_floor_map": False,
         "description": "Student residential complex & dining mess."
@@ -108,8 +117,6 @@ VIIT_CAMPUS_LOCATIONS = {
         "type": "Utility & Stores",
         "x": 715,
         "y": 300,
-        "lat": 0.0,
-        "lng": 0.0,
         "icon": "🛠️",
         "has_floor_map": False,
         "description": "Campus maintenance & facilities store."
@@ -119,32 +126,44 @@ VIIT_CAMPUS_LOCATIONS = {
         "type": "Dining & Food",
         "x": 352,
         "y": 240,
-        "lat": 0.0,
-        "lng": 0.0,
         "icon": "☕",
         "has_floor_map": False,
         "description": "Student food court & refreshment area."
     },
     "Parking Area": {
-        "name": "Campus Parking Area",
+        "name": "Student Parking Area",
         "type": "Parking",
         "x": 307,
         "y": 275,
-        "lat": 0.0,
-        "lng": 0.0,
         "icon": "🅿️",
         "has_floor_map": False,
-        "description": "Two-wheeler & four-wheeler student/faculty parking."
+        "description": "Two-wheeler student parking area."
+    },
+    "Faculty Parking": {
+        "name": "Faculty Parking",
+        "type": "Parking",
+        "x": 350,
+        "y": 275,
+        "icon": "🚗",
+        "has_floor_map": False,
+        "description": "Reserved faculty four-wheeler parking."
     },
     "ATM Counter": {
         "name": "ATM Counter",
         "type": "Banking",
         "x": 635,
         "y": 445,
-        "lat": 0.0,
-        "lng": 0.0,
         "icon": "🏧",
         "has_floor_map": False,
         "description": "24/7 ATM facility near main entrance."
+    },
+    "Central Courtyard": {
+        "name": "Central Plaza & Courtyard",
+        "type": "Courtyard",
+        "x": 440,
+        "y": 230,
+        "icon": "🌳",
+        "has_floor_map": False,
+        "description": "Central open plaza surrounded by academic wings."
     }
 }

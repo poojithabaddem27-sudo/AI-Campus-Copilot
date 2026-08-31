@@ -207,7 +207,7 @@ def find_route(start_name, end_name, user_gps=None):
             "step_num": 1,
             "icon": "📍",
             "title": f"Start at {start_loc['name']} ({start_loc['floor']})",
-            "detail": f"Position: GPS ({start_gps['lat']:.5f}, {start_gps['lng']:.5f})"
+            "detail": f"Starting Campus Location: {start_loc['name']}"
         },
         {
             "step_num": 2,

@@ -8,21 +8,21 @@ from data.viit_campus_map_data import VIIT_CAMPUS_LOCATIONS
 
 def render_pydeck_gps_map(start_gps, end_gps, start_name, end_name):
     """Renders 2D/3D Pydeck satellite map."""
-    center_lat = (start_gps["lat"] + end_gps["lat"]) / 2.0
-    center_lng = (start_gps["lng"] + end_gps["lng"]) / 2.0
+    center_lat = (start_gps.get("lat", 0.0) + end_gps.get("lat", 0.0)) / 2.0
+    center_lng = (start_gps.get("lng", 0.0) + end_gps.get("lng", 0.0)) / 2.0
 
     pins_df = pd.DataFrame([
         {
             "name": f"📍 Start: {start_name}",
-            "lat": start_gps["lat"],
-            "lng": start_gps["lng"],
+            "lat": start_gps.get("lat", 0.0),
+            "lng": start_gps.get("lng", 0.0),
             "color": [34, 197, 94, 230],
             "radius": 15
         },
         {
             "name": f"🏁 End: {end_name}",
-            "lat": end_gps["lat"],
-            "lng": end_gps["lng"],
+            "lat": end_gps.get("lat", 0.0),
+            "lng": end_gps.get("lng", 0.0),
             "color": [239, 68, 68, 230],
             "radius": 15
         }
@@ -31,9 +31,8 @@ def render_pydeck_gps_map(start_gps, end_gps, start_name, end_name):
     path_df = pd.DataFrame([
         {
             "path": [
-                [start_gps["lng"], start_gps["lat"]],
-                [(start_gps["lng"] + end_gps["lng"])/2.0 + 0.00005, (start_gps["lat"] + end_gps["lat"])/2.0],
-                [end_gps["lng"], end_gps["lat"]]
+                [start_gps.get("lng", 0.0), start_gps.get("lat", 0.0)],
+                [end_gps.get("lng", 0.0), end_gps.get("lat", 0.0)]
             ],
             "color": [37, 99, 235, 255]
         }
@@ -176,21 +175,16 @@ def render_indoor_floor_map(building_name, floor_name, start_room, target_room_i
     </html>
     """
 
-def render_realtime_gps_navigation_app(destination_name, dest_xy, dest_gps, start_name="Main Entrance", start_xy=(380, 450), start_gps=None):
+def render_realtime_gps_navigation_app(destination_name, dest_xy, dest_gps=None, start_name="Main Entrance", start_xy=(380, 450), start_gps=None):
     """
     Renders an Official VIIT Digital Campus Vector Map inside Campus Route Finder,
     featuring interactive building markers, location cards, destination search,
-    floor-map cross-links, manual starting location selection, and continuous watchPosition() real-time GPS navigation.
+    floor-map cross-links, manual starting location selection, zoom/pan controls,
+    and direction arrowheads along the route path.
     """
-    ref_points_json = json.dumps(MAP_REFERENCE_POINTS)
     locations_json = json.dumps(VIIT_CAMPUS_LOCATIONS)
     dest_x, dest_y = dest_xy
-    dest_lat = dest_gps.get("lat", 0.0)
-    dest_lng = dest_gps.get("lng", 0.0)
-    
     init_start_x, init_start_y = start_xy
-    init_start_lat = start_gps.get("lat", 0.0) if start_gps else 0.0
-    init_start_lng = start_gps.get("lng", 0.0) if start_gps else 0.0
 
     return f"""
     <!DOCTYPE html>
@@ -198,28 +192,28 @@ def render_realtime_gps_navigation_app(destination_name, dest_xy, dest_gps, star
     <head>
         <meta charset="utf-8">
         <style>
-            body {{ margin: 0; padding: 0; background: #0F172A; font-family: 'Segoe UI', system-ui, sans-serif; color: white; }}
-            .nav-box {{ position: relative; width: 100%; height: 600px; background: #1E293B; border-radius: 16px; overflow: hidden; border: 1px solid #334155; box-shadow: 0 12px 30px rgba(0,0,0,0.4); }}
+            body {{ margin: 0; padding: 0; background: #0F172A; font-family: 'Segoe UI', system-ui, sans-serif; color: white; overflow: hidden; }}
+            .nav-box {{ position: relative; width: 100%; height: 600px; background: #1E293B; border-radius: 16px; overflow: hidden; border: 1px solid #334155; box-shadow: 0 12px 30px rgba(0,0,0,0.4); user-select: none; }}
             
             .controls-bar {{ position: absolute; top: 12px; left: 12px; right: 12px; z-index: 100; display: flex; gap: 10px; flex-wrap: wrap; background: rgba(15, 23, 42, 0.9); backdrop-filter: blur(12px); padding: 10px 14px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.15); align-items: center; }}
-            .btn {{ padding: 8px 16px; border-radius: 8px; border: none; font-weight: 700; font-size: 13px; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 6px; }}
-            .btn-gps {{ background: #10B981; color: white; }}
-            .btn-gps:hover {{ background: #059669; }}
+            .btn {{ padding: 8px 14px; border-radius: 8px; border: none; font-weight: 700; font-size: 13px; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 6px; }}
+            .btn-zoom {{ background: #334155; color: white; border: 1px solid #475569; }}
+            .btn-zoom:hover {{ background: #475569; }}
             .btn-start {{ background: #2563EB; color: white; }}
             .btn-start:hover {{ background: #1D4ED8; }}
-            .btn-stop {{ background: #EF4444; color: white; }}
-            .btn-stop:hover {{ background: #DC2626; }}
+            .btn-dest {{ background: #EF4444; color: white; }}
+            .btn-dest:hover {{ background: #DC2626; }}
             .status-banner {{ font-size: 12px; font-weight: 600; color: #38BDF8; display: flex; align-items: center; gap: 6px; padding: 4px 8px; border-radius: 6px; background: rgba(56, 189, 248, 0.1); }}
             
-            .search-box-input {{ background: #0F172A; border: 1px solid #3B82F6; color: white; padding: 7px 12px; border-radius: 8px; font-size: 13px; outline: none; width: 220px; }}
+            .search-box-input {{ background: #0F172A; border: 1px solid #3B82F6; color: white; padding: 7px 12px; border-radius: 8px; font-size: 13px; outline: none; width: 210px; }}
             .search-box-input:focus {{ border-color: #60A5FA; box-shadow: 0 0 8px rgba(96, 165, 250, 0.4); }}
 
-            .location-card {{ position: absolute; bottom: 70px; right: 16px; width: 300px; background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(14px); padding: 14px 16px; border-radius: 14px; border: 1px solid #38BDF8; z-index: 110; box-shadow: 0 10px 25px rgba(0,0,0,0.5); display: none; animation: slideUp 0.3s ease-out; }}
+            .location-card {{ position: absolute; bottom: 70px; right: 16px; width: 310px; background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(14px); padding: 14px 16px; border-radius: 14px; border: 1px solid #38BDF8; z-index: 110; box-shadow: 0 10px 25px rgba(0,0,0,0.5); display: none; animation: slideUp 0.3s ease-out; }}
             @keyframes slideUp {{ from {{ transform: translateY(20px); opacity: 0; }} to {{ transform: translateY(0); opacity: 1; }} }}
             .card-title {{ font-size: 15px; font-weight: 800; color: #38BDF8; margin-bottom: 4px; display: flex; align-items: center; gap: 6px; }}
             .card-type {{ font-size: 12px; font-weight: 700; color: #F59E0B; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.05em; }}
             .card-desc {{ font-size: 12px; color: #94A3B8; margin-bottom: 12px; line-height: 1.4; }}
-            .card-actions {{ display: flex; gap: 8px; }}
+            .card-actions {{ display: flex; gap: 8px; flex-wrap: wrap; }}
             .btn-floor {{ background: #8B5CF6; color: white; padding: 6px 12px; border-radius: 6px; border: none; font-weight: 700; font-size: 12px; cursor: pointer; }}
             .btn-floor:hover {{ background: #7C3AED; }}
 
@@ -227,23 +221,30 @@ def render_realtime_gps_navigation_app(destination_name, dest_xy, dest_gps, star
             
             @keyframes route-flow {{ to {{ stroke-dashoffset: -32; }} }}
             .route-glow {{ stroke: #0284C7; stroke-width: 10; fill: none; opacity: 0.35; stroke-linecap: round; }}
-            .route-flowing {{ stroke: #38BDF8; stroke-width: 5; fill: none; stroke-linecap: round; stroke-dasharray: 12, 8; animation: route-flow 1.2s linear infinite; }}
+            .route-flowing {{ stroke: #38BDF8; stroke-width: 5; fill: none; stroke-linecap: round; stroke-dasharray: 12, 8; animation: route-flow 1.2s linear infinite; marker-mid: url(#arrow-mid); marker-end: url(#arrow-head); }}
             .user-pulse {{ animation: pulse-ring 2s cubic-bezier(0.455, 0.03, 0.515, 0.955) infinite; }}
             @keyframes pulse-ring {{ 0% {{ r: 10px; opacity: 0.9; }} 50% {{ r: 24px; opacity: 0.2; }} 100% {{ r: 10px; opacity: 0.9; }} }}
             
             .marker-g {{ cursor: pointer; transition: transform 0.2s; }}
             .marker-g:hover {{ transform: scale(1.15); }}
+            
+            .compass-box {{ position: absolute; top: 75px; right: 16px; z-index: 90; background: rgba(15,23,42,0.85); backdrop-filter: blur(8px); padding: 8px 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.15); font-weight: 800; font-size: 12px; color: #38BDF8; display: flex; align-items: center; gap: 6px; }}
         </style>
     </head>
     <body>
         <div class="nav-box">
             <!-- Controls Bar -->
             <div class="controls-bar">
-                <button class="btn btn-gps" onclick="requestGPSLocation()">📍 Use My Current Location</button>
-                <button class="btn btn-start" onclick="startLiveNavigation()">▶ Start Navigation</button>
-                <button class="btn btn-stop" onclick="stopLiveNavigation()">⏹ Stop</button>
+                <button class="btn btn-zoom" onclick="zoomIn()">➕ Zoom In</button>
+                <button class="btn btn-zoom" onclick="zoomOut()">➖ Zoom Out</button>
+                <button class="btn btn-zoom" onclick="resetMap()">🔄 Reset View</button>
                 <input class="search-box-input" type="text" id="map-search" placeholder="🔍 Search campus location..." oninput="onSearchLocation(this.value)"/>
-                <div class="status-banner" id="nav-status"><span>📡 Status: Ready ({start_name})</span></div>
+                <div class="status-banner" id="nav-status"><span>🚩 Route: {start_name} ➔ {destination_name}</span></div>
+            </div>
+
+            <!-- Compass / North Indicator -->
+            <div class="compass-box">
+                <span>🧭</span> <span>NORTH ▲</span>
             </div>
 
             <!-- Arrival Banner -->
@@ -258,126 +259,179 @@ def render_realtime_gps_navigation_app(destination_name, dest_xy, dest_gps, star
                 <div class="card-type" id="card-type">Academic & Administrative</div>
                 <div class="card-desc" id="card-desc">Contains 1st–4th Floors...</div>
                 <div class="card-actions">
-                    <button class="btn btn-start" style="padding: 6px 12px; font-size: 12px;" onclick="selectCardDestination()">▶ Navigate Here</button>
-                    <button class="btn-floor" id="btn-view-floor" style="display: none;" onclick="openFloorMapTab()">🏢 View Floor Map</button>
+                    <button class="btn btn-start" style="padding: 6px 12px; font-size: 11px;" onclick="setCardAsStart()">🚩 Set as Start</button>
+                    <button class="btn btn-dest" style="padding: 6px 12px; font-size: 11px;" onclick="selectCardDestination()">🎯 Set Destination</button>
+                    <button class="btn-floor" id="btn-view-floor" style="display: none;" onclick="openFloorMapTab()">🏢 Floor Map</button>
                 </div>
             </div>
 
-            <!-- Distance & Accuracy Metrics Bar -->
+            <!-- Distance & Walking Time Metrics Bar -->
             <div style="position: absolute; bottom: 16px; left: 16px; z-index: 100; background: rgba(15, 23, 42, 0.9); backdrop-filter: blur(10px); padding: 8px 14px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.15); display: flex; gap: 16px;">
-                <div><span style="font-size: 10px; color: #94A3B8; text-transform: uppercase;">Distance</span><br><b id="dist-val" style="color: #38BDF8; font-size: 13px;">-- m</b></div>
-                <div><span style="font-size: 10px; color: #94A3B8; text-transform: uppercase;">Est. Time</span><br><b id="time-val" style="color: #38BDF8; font-size: 13px;">-- min</b></div>
-                <div><span style="font-size: 10px; color: #94A3B8; text-transform: uppercase;">Accuracy</span><br><b id="acc-val" style="color: #34D399; font-size: 13px;">±-- m</b></div>
+                <div><span style="font-size: 10px; color: #94A3B8; text-transform: uppercase;">Walking Distance</span><br><b id="dist-val" style="color: #38BDF8; font-size: 13px;">-- m</b></div>
+                <div><span style="font-size: 10px; color: #94A3B8; text-transform: uppercase;">Est. Walking Time</span><br><b id="time-val" style="color: #38BDF8; font-size: 13px;">-- min</b></div>
             </div>
 
             <!-- OFFICIAL VIIT VECTOR DIGITAL MAP CANVAS -->
             <svg id="campus-svg" width="100%" height="100%" viewBox="0 0 950 540" preserveAspectRatio="xMidYMid meet">
+                <defs>
+                    <marker id="arrow-head" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                        <path d="M 0 0 L 10 5 L 0 10 z" fill="#38BDF8"/>
+                    </marker>
+                    <marker id="arrow-mid" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
+                        <path d="M 0 0 L 10 5 L 0 10 z" fill="#60A5FA"/>
+                    </marker>
+                </defs>
+
                 <rect width="950" height="540" fill="#0F172A"/>
 
-                <!-- Outdoor Campus Road Pathways -->
-                <path d="M 380 500 L 380 430 Q 380 360 340 360 L 150 360 Q 60 360 60 270 Q 60 180 150 180 L 750 180 Q 840 180 840 270 L 840 430" stroke="#334155" stroke-width="24" fill="none"/>
-                <path d="M 380 500 L 380 430 Q 380 360 340 360 L 150 360 Q 60 360 60 270 Q 60 180 150 180 L 750 180 Q 840 180 840 270 L 840 430" stroke="#475569" stroke-width="18" fill="none"/>
+                <!-- TRANSFORMABLE MAP WORLD GROUP (ZOOM / PAN) -->
+                <g id="map-world" transform="scale(1) translate(0, 0)">
+                    <!-- Outdoor Campus Road Pathways -->
+                    <!-- Main Approach Road to Narva -->
+                    <path d="M 120 500 L 380 500 L 380 430 Q 380 360 340 360 L 150 360 Q 60 360 60 270 Q 60 180 150 180 L 750 180 Q 840 180 840 270 L 840 430" stroke="#334155" stroke-width="24" fill="none"/>
+                    <path d="M 120 500 L 380 500 L 380 430 Q 380 360 340 360 L 150 360 Q 60 360 60 270 Q 60 180 150 180 L 750 180 Q 840 180 840 270 L 840 430" stroke="#475569" stroke-width="18" fill="none"/>
 
-                <!-- DIGITAL CAMPUS BUILDINGS & FACILITIES (TRACED FROM OFFICIAL VIIT MAP) -->
-                <g id="campus-buildings">
-                    <!-- Main Entrance & Security -->
-                    <rect x="320" y="430" width="120" height="40" rx="8" fill="#1E3A8A" stroke="#3B82F6" stroke-width="2"/>
-                    <text x="380" y="455" fill="#FFFFFF" font-size="11" font-weight="700" text-anchor="middle">🚪 Main Entrance</text>
+                    <!-- DIGITAL CAMPUS BUILDINGS & FACILITIES (TRACED FROM OFFICIAL VIIT MAP) -->
+                    <g id="campus-buildings">
+                        <!-- Main Entrance & Security -->
+                        <rect x="320" y="430" width="120" height="40" rx="8" fill="#1E3A8A" stroke="#3B82F6" stroke-width="2"/>
+                        <text x="380" y="455" fill="#FFFFFF" font-size="11" font-weight="700" text-anchor="middle">🚪 Main Entrance</text>
 
-                    <!-- Main Academic Block -->
-                    <rect x="360" y="290" width="160" height="60" rx="8" fill="#1E293B" stroke="#38BDF8" stroke-width="2.5"/>
-                    <text x="440" y="325" fill="#38BDF8" font-size="12" font-weight="800" text-anchor="middle">🏢 Main Block (1st-4th Floors)</text>
+                        <!-- Main Road to Narva Label -->
+                        <rect x="140" y="465" width="120" height="30" rx="6" fill="#1E293B" stroke="#64748B" stroke-width="1.5"/>
+                        <text x="200" y="484" fill="#94A3B8" font-size="10" font-weight="700" text-anchor="middle">🛣️ Main Road to Narva</text>
 
-                    <!-- Pharmacy College -->
-                    <rect x="100" y="90" width="140" height="50" rx="8" fill="#1E293B" stroke="#10B981" stroke-width="2"/>
-                    <text x="170" y="120" fill="#10B981" font-size="11" font-weight="700" text-anchor="middle">💊 Pharmacy College</text>
+                        <!-- Main Academic Block -->
+                        <rect x="360" y="290" width="160" height="60" rx="8" fill="#1E293B" stroke="#38BDF8" stroke-width="2.5"/>
+                        <text x="440" y="325" fill="#38BDF8" font-size="12" font-weight="800" text-anchor="middle">🏢 Main Block (1st-4th Floors)</text>
 
-                    <!-- Sports Grounds -->
-                    <!-- Cricket Ground -->
-                    <circle cx="140" cy="275" r="55" fill="#064E3B" stroke="#10B981" stroke-width="2" stroke-dasharray="4,3"/>
-                    <text x="140" y="278" fill="#A7F3D0" font-size="11" font-weight="800" text-anchor="middle">🏏 Cricket Ground</text>
+                        <!-- Pharmacy College -->
+                        <rect x="100" y="90" width="140" height="50" rx="8" fill="#1E293B" stroke="#10B981" stroke-width="2"/>
+                        <text x="170" y="120" fill="#10B981" font-size="11" font-weight="700" text-anchor="middle">💊 Pharmacy College</text>
 
-                    <!-- Football Ground -->
-                    <rect x="360" y="80" width="160" height="65" rx="10" fill="#064E3B" stroke="#10B981" stroke-width="2"/>
-                    <text x="440" y="118" fill="#A7F3D0" font-size="11" font-weight="800" text-anchor="middle">⚽ Football Ground</text>
+                        <!-- Sports Grounds & Courts -->
+                        <!-- Cricket Ground -->
+                        <circle cx="140" cy="275" r="55" fill="#064E3B" stroke="#10B981" stroke-width="2" stroke-dasharray="4,3"/>
+                        <text x="140" y="278" fill="#A7F3D0" font-size="11" font-weight="800" text-anchor="middle">🏏 Cricket Ground</text>
 
-                    <!-- Basketball Court -->
-                    <rect x="440" y="390" width="40" height="30" rx="4" fill="#7C2D12" stroke="#F97316" stroke-width="1.5"/>
-                    <text x="460" y="410" fill="#FFEDD5" font-size="9" font-weight="700" text-anchor="middle">🏀 BB</text>
+                        <!-- Football Ground -->
+                        <rect x="360" y="80" width="160" height="65" rx="10" fill="#064E3B" stroke="#10B981" stroke-width="2"/>
+                        <text x="440" y="118" fill="#A7F3D0" font-size="11" font-weight="800" text-anchor="middle">⚽ Football Ground</text>
 
-                    <!-- Volleyball Court -->
-                    <rect x="395" y="390" width="38" height="30" rx="4" fill="#7C2D12" stroke="#F97316" stroke-width="1.5"/>
-                    <text x="414" y="410" fill="#FFEDD5" font-size="9" font-weight="700" text-anchor="middle">🏐 VB</text>
+                        <!-- Volleyball Court -->
+                        <rect x="395" y="390" width="38" height="30" rx="4" fill="#7C2D12" stroke="#F97316" stroke-width="1.5"/>
+                        <text x="414" y="410" fill="#FFEDD5" font-size="9" font-weight="700" text-anchor="middle">🏐 VB</text>
 
-                    <!-- Indoor Sports Hall -->
-                    <rect x="485" y="390" width="45" height="30" rx="4" fill="#581C87" stroke="#A855F7" stroke-width="1.5"/>
-                    <text x="507" y="410" fill="#F3E8FF" font-size="9" font-weight="700" text-anchor="middle">🏸 Indoor</text>
+                        <!-- Basketball Court -->
+                        <rect x="440" y="390" width="40" height="30" rx="4" fill="#7C2D12" stroke="#F97316" stroke-width="1.5"/>
+                        <text x="460" y="410" fill="#FFEDD5" font-size="9" font-weight="700" text-anchor="middle">🏀 BB</text>
 
-                    <!-- Girls Hostel & Mess -->
-                    <rect x="620" y="130" width="130" height="55" rx="8" fill="#1E293B" stroke="#F43F5E" stroke-width="2"/>
-                    <text x="685" y="162" fill="#FDA4AF" font-size="11" font-weight="700" text-anchor="middle">🏠 Girls Hostel & Mess</text>
+                        <!-- Tennis Court -->
+                        <rect x="520" y="390" width="38" height="30" rx="4" fill="#065F46" stroke="#34D399" stroke-width="1.5"/>
+                        <text x="539" y="410" fill="#D1FAE5" font-size="9" font-weight="700" text-anchor="middle">🎾 Tennis</text>
 
-                    <!-- Facilities Block -->
-                    <rect x="660" y="275" width="110" height="50" rx="8" fill="#1E293B" stroke="#64748B" stroke-width="2"/>
-                    <text x="715" y="305" fill="#CBD5E1" font-size="11" font-weight="700" text-anchor="middle">🛠️ Facilities Block</text>
+                        <!-- Indoor Sports Hall -->
+                        <rect x="485" y="390" width="32" height="30" rx="4" fill="#581C87" stroke="#A855F7" stroke-width="1.5"/>
+                        <text x="501" y="410" fill="#F3E8FF" font-size="9" font-weight="700" text-anchor="middle">🏸 Ind</text>
 
-                    <!-- Campus Canteen -->
-                    <rect x="310" y="220" width="85" height="40" rx="6" fill="#78350F" stroke="#F59E0B" stroke-width="1.5"/>
-                    <text x="352" y="245" fill="#FEF08A" font-size="11" font-weight="700" text-anchor="middle">☕ Canteen</text>
+                        <!-- Outdoor Badminton Court -->
+                        <rect x="562" y="390" width="38" height="30" rx="4" fill="#581C87" stroke="#C084FC" stroke-width="1.5"/>
+                        <text x="581" y="410" fill="#F3E8FF" font-size="9" font-weight="700" text-anchor="middle">🏸 Badm</text>
 
-                    <!-- Parking Area -->
-                    <rect x="270" y="260" width="75" height="35" rx="6" fill="#334155" stroke="#94A3B8" stroke-width="1.5"/>
-                    <text x="307" y="282" fill="#E2E8F0" font-size="10" font-weight="700" text-anchor="middle">🅿️ Parking</text>
+                        <!-- Girls Hostel & Mess -->
+                        <rect x="620" y="130" width="130" height="55" rx="8" fill="#1E293B" stroke="#F43F5E" stroke-width="2"/>
+                        <text x="685" y="162" fill="#FDA4AF" font-size="11" font-weight="700" text-anchor="middle">🏠 Girls Hostel & Mess</text>
 
-                    <!-- ATM Counter -->
-                    <rect x="600" y="430" width="70" height="35" rx="6" fill="#14532D" stroke="#22C55E" stroke-width="1.5"/>
-                    <text x="635" y="452" fill="#86EFAC" font-size="10" font-weight="700" text-anchor="middle">🏧 ATM</text>
-                </g>
+                        <!-- Facilities Block -->
+                        <rect x="660" y="275" width="110" height="50" rx="8" fill="#1E293B" stroke="#64748B" stroke-width="2"/>
+                        <text x="715" y="305" fill="#CBD5E1" font-size="11" font-weight="700" text-anchor="middle">🛠️ Facilities Block</text>
 
-                <!-- Dynamic Flowing Blue Route Layer -->
-                <polyline id="route-glow-line" class="route-glow" points=""/>
-                <polyline id="route-flow-line" class="route-flowing" points=""/>
+                        <!-- Campus Canteen -->
+                        <rect x="310" y="220" width="85" height="40" rx="6" fill="#78350F" stroke="#F59E0B" stroke-width="1.5"/>
+                        <text x="352" y="245" fill="#FEF08A" font-size="11" font-weight="700" text-anchor="middle">☕ Canteen</text>
 
-                <!-- INTERACTIVE TAPPABLE LOCATION MARKERS -->
-                <g id="interactive-markers"></g>
+                        <!-- Student Parking -->
+                        <rect x="270" y="260" width="75" height="35" rx="6" fill="#334155" stroke="#94A3B8" stroke-width="1.5"/>
+                        <text x="307" y="282" fill="#E2E8F0" font-size="10" font-weight="700" text-anchor="middle">🅿️ Parking</text>
 
-                <!-- USER POSITION MARKER (🔵 YOU ARE HERE) -->
-                <g id="user-marker" transform="translate({init_start_x}, {init_start_y})">
-                    <circle class="user-pulse" cx="0" cy="0" r="16" fill="#3B82F6"/>
-                    <circle cx="0" cy="0" r="9" fill="#2563EB" stroke="#FFFFFF" stroke-width="2.5"/>
-                    <circle cx="0" cy="0" r="3" fill="#FFFFFF"/>
-                    <text x="0" y="-18" fill="#60A5FA" font-size="11" font-weight="800" text-anchor="middle">🔵 YOU ARE HERE ({start_name})</text>
-                </g>
+                        <!-- Faculty Parking -->
+                        <rect x="350" y="260" width="75" height="35" rx="6" fill="#334155" stroke="#60A5FA" stroke-width="1.5"/>
+                        <text x="387" y="282" fill="#93C5FD" font-size="10" font-weight="700" text-anchor="middle">🚗 Faculty Park</text>
 
-                <!-- TARGET DESTINATION MARKER -->
-                <g id="target-dest-marker" transform="translate({dest_x}, {dest_y})">
-                    <circle cx="0" cy="0" r="14" fill="#EF4444" opacity="0.3"/>
-                    <circle cx="0" cy="0" r="8" fill="#EF4444" stroke="#FFFFFF" stroke-width="2"/>
-                    <text id="dest-label-text" x="0" y="-16" fill="#F87171" font-size="12" font-weight="800" text-anchor="middle">🔴 {destination_name}</text>
+                        <!-- ATM Counter -->
+                        <rect x="600" y="430" width="70" height="35" rx="6" fill="#14532D" stroke="#22C55E" stroke-width="1.5"/>
+                        <text x="635" y="452" fill="#86EFAC" font-size="10" font-weight="700" text-anchor="middle">🏧 ATM</text>
+
+                        <!-- Central Courtyard -->
+                        <rect x="400" y="210" width="90" height="40" rx="8" fill="#064E3B" stroke="#34D399" stroke-width="1.5" stroke-dasharray="4,2"/>
+                        <text x="445" y="234" fill="#A7F3D0" font-size="10" font-weight="700" text-anchor="middle">🌳 Courtyard</text>
+                    </g>
+
+                    <!-- Dynamic Flowing Blue Route Layer -->
+                    <polyline id="route-glow-line" class="route-glow" points=""/>
+                    <polyline id="route-flow-line" class="route-flowing" points=""/>
+
+                    <!-- INTERACTIVE TAPPABLE LOCATION MARKERS -->
+                    <g id="interactive-markers"></g>
+
+                    <!-- STARTING CAMPUS POSITION MARKER (🚩 START) -->
+                    <g id="user-marker" transform="translate({init_start_x}, {init_start_y})">
+                        <circle class="user-pulse" cx="0" cy="0" r="16" fill="#3B82F6"/>
+                        <circle cx="0" cy="0" r="9" fill="#2563EB" stroke="#FFFFFF" stroke-width="2.5"/>
+                        <circle cx="0" cy="0" r="3" fill="#FFFFFF"/>
+                        <text id="start-label-text" x="0" y="-18" fill="#60A5FA" font-size="11" font-weight="800" text-anchor="middle">🚩 START ({start_name})</text>
+                    </g>
+
+                    <!-- TARGET DESTINATION MARKER -->
+                    <g id="target-dest-marker" transform="translate({dest_x}, {dest_y})">
+                        <circle cx="0" cy="0" r="14" fill="#EF4444" opacity="0.3"/>
+                        <circle cx="0" cy="0" r="8" fill="#EF4444" stroke="#FFFFFF" stroke-width="2"/>
+                        <text id="dest-label-text" x="0" y="-16" fill="#F87171" font-size="12" font-weight="800" text-anchor="middle">🔴 {destination_name}</text>
+                    </g>
                 </g>
             </svg>
         </div>
 
         <script>
-            const refPoints = {ref_points_json};
             const campusLocations = {locations_json};
+
+            let startName = "{start_name}";
+            let currentX = {init_start_x};
+            let currentY = {init_start_y};
 
             let currentDestName = "{destination_name}";
             let currentDestX = {dest_x};
             let currentDestY = {dest_y};
-            let currentDestLat = {dest_lat};
-            let currentDestLng = {dest_lng};
             let selectedLocationObj = null;
 
-            let watchId = null;
-            let currentLat = {init_start_lat};
-            let currentLng = {init_start_lng};
-            let currentX = {init_start_x};
-            let currentY = {init_start_y};
+            let currentScale = 1.0;
+
+            function zoomIn() {{
+                if (currentScale < 2.2) {{
+                    currentScale += 0.2;
+                    applyTransform();
+                }}
+            }}
+
+            function zoomOut() {{
+                if (currentScale > 0.7) {{
+                    currentScale -= 0.2;
+                    applyTransform();
+                }}
+            }}
+
+            function resetMap() {{
+                currentScale = 1.0;
+                applyTransform();
+            }}
+
+            function applyTransform() {{
+                document.getElementById("map-world").setAttribute("transform", "scale(" + currentScale + ")");
+            }}
 
             function updateStatus(msg, isError = false) {{
                 const el = document.getElementById("nav-status");
-                el.innerHTML = (isError ? "⚠️ " : "📡 ") + msg;
+                el.innerHTML = (isError ? "⚠️ " : "🚩 ") + msg;
                 el.style.color = isError ? "#F87171" : "#38BDF8";
             }}
 
@@ -422,20 +476,31 @@ def render_realtime_gps_navigation_app(destination_name, dest_xy, dest_gps, star
                 document.getElementById("info-card").style.display = "block";
             }}
 
+            function setCardAsStart() {{
+                if (!selectedLocationObj) return;
+                startName = selectedLocationObj.name;
+                currentX = selectedLocationObj.x;
+                currentY = selectedLocationObj.y;
+
+                document.getElementById("user-marker").setAttribute("transform", "translate(" + currentX + ", " + currentY + ")");
+                document.getElementById("start-label-text").textContent = "🚩 START (" + startName + ")";
+
+                updateLiveRoute(currentX, currentY);
+                updateStatus("Route: " + startName + " ➔ " + currentDestName);
+            }}
+
             function selectCardDestination() {{
                 if (!selectedLocationObj) return;
                 currentDestName = selectedLocationObj.name;
                 currentDestX = selectedLocationObj.x;
                 currentDestY = selectedLocationObj.y;
-                currentDestLat = selectedLocationObj.lat;
-                currentDestLng = selectedLocationObj.lng;
 
                 document.getElementById("target-dest-marker").setAttribute("transform", "translate(" + currentDestX + ", " + currentDestY + ")");
                 document.getElementById("dest-label-text").textContent = "🔴 " + currentDestName;
                 document.getElementById("arrival-dest-name").innerText = "📍 Destination: " + currentDestName;
 
                 updateLiveRoute(currentX, currentY);
-                updateStatus("Destination set to " + currentDestName);
+                updateStatus("Route: " + startName + " ➔ " + currentDestName);
             }}
 
             function onSearchLocation(query) {{
@@ -454,78 +519,12 @@ def render_realtime_gps_navigation_app(destination_name, dest_xy, dest_gps, star
                 alert("Click on the '🗺️ Interactive Floor Map' tab above to view the detailed 1st-4th floor plans of Main Block!");
             }}
 
-            function gpsToMapXY(lat, lng) {{
-                if (!refPoints || refPoints.length === 0) return {{ x: 380, y: 450 }};
-                let totalWeight = 0, sumX = 0, sumY = 0;
-                for (let pt of refPoints) {{
-                    let distSq = ((lat - pt.latitude)**2 + (lng - pt.longitude)**2) || 0.00000001;
-                    let weight = 1 / distSq;
-                    sumX += (pt.x + (lng - pt.longitude) * 150000) * weight;
-                    sumY += (pt.y - (lat - pt.latitude) * 150000) * weight;
-                    totalWeight += weight;
-                }}
-                return {{ x: Math.max(50, Math.min(880, sumX / totalWeight)), y: Math.max(50, Math.min(480, sumY / totalWeight)) }};
-            }}
-
-            function haversineDistMeters(lat1, lon1, lat2, lon2) {{
-                const R = 6371000;
-                const dLat = (lat2 - lat1) * Math.PI / 180;
-                const dLon = (lon2 - lon1) * Math.PI / 180;
-                const a = Math.sin(dLat / 2)**2 + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon / 2)**2;
-                return Math.round(R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
-            }}
-
-            function requestGPSLocation() {{
-                if (!navigator.geolocation) return updateStatus("Geolocation not supported.", true);
-                updateStatus("Requesting GPS...");
-                navigator.geolocation.getCurrentPosition(onGPSSuccess, onGPSError, {{ enableHighAccuracy: true }});
-            }}
-
-            function startLiveNavigation() {{
-                if (!navigator.geolocation) return updateStatus("Geolocation not supported.", true);
-                updateStatus("Live watchPosition active...");
-                if (watchId) navigator.geolocation.clearWatch(watchId);
-                watchId = navigator.geolocation.watchPosition(onGPSSuccess, onGPSError, {{ enableHighAccuracy: true, maximumAge: 1000 }});
-            }}
-
-            function stopLiveNavigation() {{
-                if (watchId) navigator.geolocation.clearWatch(watchId);
-                watchId = null;
-                updateStatus("Navigation stopped.");
-            }}
-
-            function onGPSSuccess(pos) {{
-                currentLat = pos.coords.latitude;
-                currentLng = pos.coords.longitude;
-                let acc = Math.round(pos.coords.accuracy || 10);
-                document.getElementById("acc-val").innerText = "±" + acc + " m";
-                updateStatus("Live GPS Signal Active (±" + acc + "m)");
-
-                let coords = gpsToMapXY(currentLat, currentLng);
-                currentX = coords.x;
-                currentY = coords.y;
-                document.getElementById("user-marker").setAttribute("transform", "translate(" + currentX + ", " + currentY + ")");
-                
-                updateLiveRoute(currentX, currentY);
-
-                let distM = haversineDistMeters(currentLat, currentLng, currentDestLat, currentDestLng);
-                if (distM <= 15) {{
-                    document.getElementById("arrival-banner").style.display = "block";
-                    updateStatus("🎉 Arrived at " + currentDestName);
-                    stopLiveNavigation();
-                }}
-            }}
-
-            function onGPSError(err) {{
-                updateStatus("GPS error: " + err.message, true);
-            }}
-
             function updateLiveRoute(x, y) {{
                 let ptsStr = x + "," + y + " 340,360 " + currentDestX + "," + currentDestY;
                 document.getElementById("route-glow-line").setAttribute("points", ptsStr);
                 document.getElementById("route-flow-line").setAttribute("points", ptsStr);
 
-                let distM = (currentLat && currentLng) ? haversineDistMeters(currentLat, currentLng, currentDestLat, currentDestLng) : Math.round(Math.hypot(currentDestX - x, currentDestY - y) * 0.8);
+                let distM = Math.round(Math.hypot(currentDestX - x, currentDestY - y) * 0.8);
                 document.getElementById("dist-val").innerText = distM + " m";
                 document.getElementById("time-val").innerText = Math.max(1, Math.round(distM / 68)) + " min";
             }}
