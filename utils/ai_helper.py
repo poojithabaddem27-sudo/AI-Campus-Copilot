@@ -33,6 +33,23 @@ def get_gemini_api_key():
 
     return None
 
+def get_google_maps_api_key():
+    """Retrieves GOOGLE_MAPS_API_KEY safely from Streamlit Secrets or environment variables."""
+    try:
+        if hasattr(st, "secrets") and "GOOGLE_MAPS_API_KEY" in st.secrets and st.secrets["GOOGLE_MAPS_API_KEY"]:
+            key = str(st.secrets["GOOGLE_MAPS_API_KEY"]).strip()
+            if key and not key.startswith("YOUR_"):
+                return key
+    except Exception as e:
+        print(f"Streamlit secrets lookup note: {e}")
+
+    env_key = os.getenv("GOOGLE_MAPS_API_KEY")
+    if env_key and str(env_key).strip() and not str(env_key).startswith("YOUR_"):
+        return str(env_key).strip()
+
+    return None
+
+
 def get_genai_client(api_key=None):
     """Initializes and returns a Google GenAI Client if API key is present in Streamlit Secrets."""
     if not GENAI_AVAILABLE:
@@ -142,15 +159,24 @@ def generate_campus_response(user_query, api_key=None, history=None):
                 break
     clean_term = clean_term.strip(" ?!.")
 
+    # Handle "show me the route" or "yes, show route" voice queries
+    if ("route" in q_lower or "way" in q_lower or "navigate" in q_lower) and ("show" in q_lower or "yes" in q_lower or "how" in q_lower):
+        return (
+            "🗺️ **Opening Campus Map & Navigation Route!**\n\n"
+            "I have updated the target destination in the **Campus Route Finder**. "
+            "Switch to the **🧭 Campus Route Finder** tab above to view the interactive animated route and walking directions!"
+        )
+
     matches = search_locations(clean_term)
     if matches:
         if len(matches) == 1:
             m = matches[0]
-            return f"📍 **{m['name']}** is located on the **{m['floor']}**."
+            return f"📍 **{m['name']}** is located on the **{m['floor']}**.\n\n🗺️ *Would you like me to show you the route on the campus map? Click the **🧭 Campus Route Finder** tab above or say 'Yes, show me the route'!*"
         else:
             res = "📍 **Matching Campus Locations:**\n\n"
             for m in matches:
                 res += f"• {m['icon']} **{m['name']}** — {m['floor']}\n"
+            res += "\n🗺️ *Say 'Where is [Location]' or 'Show me the route' for directions!*"
             return res
 
     # 4. Check floor content fallback if clean_term was a floor string

@@ -175,6 +175,311 @@ def render_indoor_floor_map(building_name, floor_name, start_room, target_room_i
     </html>
     """
 
+def render_google_maps_outdoor_app(destination_name, dest_xy, dest_gps=None, start_name="Main Entrance", start_xy=(380, 450), start_gps=None, api_key=""):
+    """
+    Renders Google Maps Outdoor Satellite Navigation application with:
+    - 📍 Use My Current Location (Browser Geolocation API + Live Tracking via watchPosition)
+    - 🎯 Recenter to My Location Button
+    - 🔵 YOU ARE HERE Pulsating Marker & Accuracy Circle
+    - 📊 Real-Time Status Panel (GPS Coordinates, Destination, Distance, Walking ETA, Accuracy)
+    - 🏬 Outdoor-to-Indoor Seamless Transition Link
+    """
+    locations_json = json.dumps(VIIT_CAMPUS_LOCATIONS)
+    
+    dest_loc = VIIT_CAMPUS_LOCATIONS.get(destination_name, VIIT_CAMPUS_LOCATIONS.get("Main Block", {}))
+    dest_lat = dest_loc.get("lat", 17.70825)
+    dest_lng = dest_loc.get("lng", 83.16782)
+    
+    start_loc = VIIT_CAMPUS_LOCATIONS.get(start_name, VIIT_CAMPUS_LOCATIONS.get("Main Entrance", {}))
+    start_lat = start_loc.get("lat", 17.70710)
+    start_lng = start_loc.get("lng", 83.16750)
+    
+    return f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="utf-8">
+        <style>
+            body {{ margin: 0; padding: 0; background: #0F172A; font-family: 'Segoe UI', system-ui, sans-serif; color: white; }}
+            .gmap-box {{ position: relative; width: 100%; height: 630px; border-radius: 16px; overflow: hidden; border: 1px solid #334155; box-shadow: 0 12px 30px rgba(0,0,0,0.4); }}
+            #map-canvas {{ width: 100%; height: 100%; }}
+            
+            .controls-bar {{ position: absolute; top: 12px; left: 12px; right: 12px; z-index: 10; display: flex; gap: 10px; flex-wrap: wrap; background: rgba(15, 23, 42, 0.92); backdrop-filter: blur(12px); padding: 10px 14px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.15); align-items: center; }}
+            .btn-gmap {{ padding: 8px 14px; border-radius: 8px; border: none; font-weight: 700; font-size: 13px; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 6px; }}
+            .btn-location {{ background: linear-gradient(135deg, #10B981, #059669); color: white; }}
+            .btn-location:hover {{ transform: scale(1.04); box-shadow: 0 0 12px rgba(16, 185, 129, 0.6); }}
+            .btn-recenter {{ background: linear-gradient(135deg, #8B5CF6, #7C3AED); color: white; }}
+            .btn-recenter:hover {{ transform: scale(1.04); }}
+            .btn-nav {{ background: linear-gradient(135deg, #2563EB, #0284C7); color: white; }}
+            .btn-nav:hover {{ transform: scale(1.04); }}
+            
+            .status-panel {{ position: absolute; bottom: 16px; left: 16px; right: 16px; z-index: 10; background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(12px); padding: 12px 18px; border-radius: 14px; border: 1px solid rgba(56, 189, 248, 0.3); display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); }}
+            .panel-item {{ display: flex; flex-direction: column; }}
+            .panel-label {{ font-size: 10px; color: #94A3B8; text-transform: uppercase; font-weight: 700; letter-spacing: 0.05em; }}
+            .panel-val {{ color: #38BDF8; font-size: 13px; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }}
+
+            .err-toast {{ position: absolute; top: 75px; left: 50%; transform: translateX(-50%); z-index: 20; background: #EF4444; color: white; padding: 10px 18px; border-radius: 10px; font-weight: 700; font-size: 13px; display: none; box-shadow: 0 8px 20px rgba(239, 68, 68, 0.4); text-align: center; max-width: 90%; }}
+        </style>
+        <script src="https://maps.googleapis.com/maps/api/js?key={api_key}&libraries=geometry"></script>
+    </head>
+    <body>
+        <div class="gmap-box">
+            <!-- Controls Bar -->
+            <div class="controls-bar">
+                <button id="btn-loc" class="btn-gmap btn-location" onclick="toggleGPSLocation()">📍 Use My Current Location</button>
+                <button class="btn-gmap btn-recenter" onclick="recenterToUser()">🎯 Recenter to My Location</button>
+                <button class="btn-gmap btn-nav" onclick="calculateRoute()">🧭 Start Navigation</button>
+            </div>
+
+            <!-- Error Notification Banner -->
+            <div class="err-toast" id="err-banner"></div>
+
+            <!-- Map Canvas -->
+            <div id="map-canvas"></div>
+
+            <!-- Comprehensive Status Panel -->
+            <div class="status-panel">
+                <div class="panel-item">
+                    <span class="panel-label">📍 Current GPS Location</span>
+                    <span class="panel-val" id="panel-gps">Not Tracking</span>
+                </div>
+                <div class="panel-item">
+                    <span class="panel-label">🎯 Destination</span>
+                    <span class="panel-val" id="panel-dest">{destination_name}</span>
+                </div>
+                <div class="panel-item">
+                    <span class="panel-label">📏 Distance</span>
+                    <span class="panel-val" id="panel-dist">-- m</span>
+                </div>
+                <div class="panel-item">
+                    <span class="panel-label">⏱️ Walking Time</span>
+                    <span class="panel-val" id="panel-time">-- min</span>
+                </div>
+                <div class="panel-item">
+                    <span class="panel-label">🎯 GPS Accuracy</span>
+                    <span class="panel-val" id="panel-accuracy">--</span>
+                </div>
+            </div>
+        </div>
+
+        <script>
+            const campusLocations = {locations_json};
+            const targetDestName = "{destination_name}";
+            const destLat = {dest_lat};
+            const destLng = {dest_lng};
+            let userLat = {start_lat};
+            let userLng = {start_lng};
+            let isTrackingActive = false;
+
+            let map = null;
+            let userMarker = null;
+            let destMarker = null;
+            let accuracyCircle = null;
+            let routePolyline = null;
+            let watchId = null;
+
+            function initGoogleMap() {{
+                const centerPos = {{ lat: (userLat + destLat)/2, lng: (userLng + destLng)/2 }};
+                map = new google.maps.Map(document.getElementById('map-canvas'), {{
+                    zoom: 18,
+                    center: centerPos,
+                    mapTypeId: 'hybrid',
+                    disableDefaultUI: false,
+                    zoomControl: true,
+                    mapTypeControl: true,
+                    scaleControl: true,
+                    streetViewControl: false,
+                    rotateControl: true,
+                    fullscreenControl: true
+                }});
+
+                // Destination Marker
+                destMarker = new google.maps.Marker({{
+                    position: {{ lat: destLat, lng: destLng }},
+                    map: map,
+                    title: targetDestName,
+                    icon: {{
+                        path: google.maps.SymbolPath.BACKWARD_CLOSED_ARROW,
+                        scale: 6.5,
+                        fillColor: "#EF4444",
+                        fillOpacity: 1,
+                        strokeWeight: 2,
+                        strokeColor: "#FFFFFF"
+                    }}
+                }});
+
+                const destInfoWindow = new google.maps.InfoWindow({{
+                    content: `<div style="color:#0F172A; font-family:sans-serif; padding:4px;">
+                        <b style="font-size:14px;">🎯 ${{targetDestName}}</b><br>
+                        <span style="font-size:12px; color:#475569;">VIIT Campus Destination</span>
+                    </div>`
+                }});
+
+                destMarker.addListener('click', () => {{
+                    destInfoWindow.open(map, destMarker);
+                }});
+
+                // Plot all campus building markers
+                Object.keys(campusLocations).forEach(key => {{
+                    const loc = campusLocations[key];
+                    if (loc.lat && loc.lng && key !== targetDestName) {{
+                        const m = new google.maps.Marker({{
+                            position: {{ lat: loc.lat, lng: loc.lng }},
+                            map: map,
+                            title: loc.name,
+                            opacity: 0.75
+                        }});
+                        const iw = new google.maps.InfoWindow({{
+                            content: `<div style="color:#0F172A; font-family:sans-serif; padding:4px;">
+                                <b style="font-size:13px;">${{loc.icon || "📍"}} ${{loc.name}}</b><br>
+                                <span style="font-size:11px; color:#64748B;">${{loc.description || ""}}</span>
+                            </div>`
+                        }});
+                        m.addListener('click', () => iw.open(map, m));
+                    }}
+                }});
+
+                calculateRoute();
+            }}
+
+            function showToast(msg) {{
+                const el = document.getElementById('err-banner');
+                el.innerText = msg;
+                el.style.display = 'block';
+                setTimeout(() => {{ el.style.display = 'none'; }}, 6000);
+            }}
+
+            function toggleGPSLocation() {{
+                if (!navigator.geolocation) {{
+                    showToast("⚠️ GPS Geolocation is not supported by your browser.");
+                    return;
+                }}
+
+                const btn = document.getElementById('btn-loc');
+
+                if (isTrackingActive && watchId !== null) {{
+                    navigator.geolocation.clearWatch(watchId);
+                    watchId = null;
+                    isTrackingActive = false;
+                    btn.innerText = "📍 Use My Current Location";
+                    btn.style.background = "linear-gradient(135deg, #10B981, #059669)";
+                    document.getElementById('panel-gps').innerText = "Tracking Stopped";
+                    return;
+                }}
+
+                btn.innerText = "⏳ Acquiring Live GPS...";
+
+                // Start continuous watchPosition tracking
+                watchId = navigator.geolocation.watchPosition(
+                    (position) => {{
+                        isTrackingActive = true;
+                        userLat = position.coords.latitude;
+                        userLng = position.coords.longitude;
+                        const accuracy = Math.round(position.coords.accuracy);
+
+                        btn.innerText = "🛑 Stop Live Tracking";
+                        btn.style.background = "linear-gradient(135deg, #EF4444, #DC2626)";
+
+                        document.getElementById('panel-gps').innerText = userLat.toFixed(5) + ", " + userLng.toFixed(5);
+                        document.getElementById('panel-accuracy').innerText = "±" + accuracy + " m";
+
+                        const userPos = {{ lat: userLat, lng: userLng }};
+
+                        if (!userMarker) {{
+                            userMarker = new google.maps.Marker({{
+                                position: userPos,
+                                map: map,
+                                title: "YOU ARE HERE",
+                                icon: {{
+                                    path: google.maps.SymbolPath.CIRCLE,
+                                    scale: 9,
+                                    fillColor: "#10B981",
+                                    fillOpacity: 1,
+                                    strokeWeight: 3,
+                                    strokeColor: "#FFFFFF"
+                                }}
+                            }});
+                        }} else {{
+                            userMarker.setPosition(userPos);
+                        }}
+
+                        if (!accuracyCircle) {{
+                            accuracyCircle = new google.maps.Circle({{
+                                map: map,
+                                center: userPos,
+                                radius: accuracy,
+                                fillColor: "#10B981",
+                                fillOpacity: 0.15,
+                                strokeColor: "#10B981",
+                                strokeOpacity: 0.5,
+                                strokeWidth: 1
+                            }});
+                        }} else {{
+                            accuracyCircle.setCenter(userPos);
+                            accuracyCircle.setRadius(accuracy);
+                        }}
+
+                        calculateRoute();
+                    }},
+                    (error) => {{
+                        btn.innerText = "📍 Use My Current Location";
+                        btn.style.background = "linear-gradient(135deg, #10B981, #059669)";
+                        isTrackingActive = false;
+
+                        if (error.code === error.PERMISSION_DENIED) {{
+                            showToast("⚠️ Location Permission Denied: Please allow browser location permissions in your site settings.");
+                        }} else if (error.code === error.POSITION_UNAVAILABLE) {{
+                            showToast("⚠️ GPS Location Unavailable: Ensure GPS/Location services are enabled on your device.");
+                        }} else if (error.code === error.TIMEOUT) {{
+                            showToast("⚠️ GPS Request Timed Out: Please check satellite connection and try again.");
+                        }} else {{
+                            showToast("⚠️ GPS Error: " + error.message);
+                        }}
+                    }},
+                    {{ enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }}
+                );
+            }}
+
+            function recenterToUser() {{
+                if (userMarker && userLat && userLng) {{
+                    map.panTo({{ lat: userLat, lng: userLng }});
+                    map.setZoom(19);
+                }} else {{
+                    showToast("📍 Please click 'Use My Current Location' first to activate GPS.");
+                }}
+            }}
+
+            function calculateRoute() {{
+                if (typeof google === 'undefined' || !google.maps || !google.maps.geometry) return;
+
+                const p1 = new google.maps.LatLng(userLat, userLng);
+                const p2 = new google.maps.LatLng(destLat, destLng);
+
+                const distanceMeters = Math.round(google.maps.geometry.spherical.computeDistanceBetween(p1, p2));
+                const walkMins = Math.max(1, Math.round(distanceMeters / 80));
+
+                document.getElementById('panel-dist').innerText = distanceMeters + " m";
+                document.getElementById('panel-time').innerText = walkMins + " min";
+
+                if (routePolyline) routePolyline.setMap(null);
+
+                routePolyline = new google.maps.Polyline({{
+                    path: [p1, p2],
+                    geodesic: true,
+                    strokeColor: "#38BDF8",
+                    strokeOpacity: 0.85,
+                    strokeWeight: 5,
+                    map: map
+                }});
+            }}
+
+            window.onload = initGoogleMap;
+        </script>
+    </body>
+    </html>
+    """
+
+
 def render_realtime_gps_navigation_app(destination_name, dest_xy, dest_gps=None, start_name="Main Entrance", start_xy=(380, 450), start_gps=None):
     """
     Renders an Official VIIT Digital Campus Vector Map inside Campus Route Finder,

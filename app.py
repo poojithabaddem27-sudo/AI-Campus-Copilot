@@ -27,9 +27,11 @@ from utils.map_renderer import (
     render_custom_illustrated_campus_map,
     render_indoor_floor_map,
     render_realtime_gps_navigation_app,
+    render_google_maps_outdoor_app,
     render_official_viit_interactive_map
 )
-from utils.ai_helper import generate_campus_response, summarize_study_material, get_gemini_api_key
+from utils.ai_helper import generate_campus_response, summarize_study_material, get_gemini_api_key, get_google_maps_api_key
+from utils.voice_helper import render_inside_input_mic_button, render_speech_synthesis_player
 
 # 1. Page Configuration
 st.set_page_config(
@@ -149,12 +151,22 @@ with st.sidebar:
     
     st.divider()
     
-    st.subheader("⚙️ AI Configuration")
-    active_key = get_gemini_api_key()
-    if active_key:
-        st.success("Gemini API Key loaded securely from Streamlit Secrets!", icon="⚡")
+    st.subheader("⚙️ System Status")
+    gemini_key = get_gemini_api_key()
+    gmaps_key = get_google_maps_api_key()
+
+    if gemini_key:
+        st.success("✅ AI Assistant Connected (Gemini Flash)", icon="⚡")
     else:
-        st.warning("⚠️ GEMINI_API_KEY is not configured in Streamlit Secrets (`.streamlit/secrets.toml`).\n\nAI is running in Grounded Campus Database Mode.", icon="⚠️")
+        st.info("ℹ️ AI Running in Grounded Campus Database Mode (Add GEMINI_API_KEY to secrets.toml for live GenAI).")
+
+    st.success("✅ Campus Database Available (VIIT Dataset)", icon="📚")
+    st.success("✅ GPS Real-Time Device Location Ready", icon="📍")
+
+    if gmaps_key:
+        st.success("🗺️ Google Maps Satellite Navigation Connected", icon="🛰️")
+    else:
+        st.info("ℹ️ Running in Vector Campus Map Mode (Add GOOGLE_MAPS_API_KEY to secrets.toml for live Google Maps satellite).")
 
     st.divider()
 
@@ -238,38 +250,74 @@ with tab_route:
 
     st.markdown("---")
 
-    # Render Official VIIT Interactive Digital Campus Map Component
-    realtime_nav_html = render_realtime_gps_navigation_app(
-        dest_select, dest_xy, {},
-        start_name=start_name, start_xy=start_xy, start_gps={}
-    )
+    gmaps_key = get_google_maps_api_key()
+    if gmaps_key:
+        st.info("🗺️ **Google Maps Outdoor Navigation Active**: Satellite view enabled with real-time GPS tracking & walking ETA.")
+        realtime_nav_html = render_google_maps_outdoor_app(
+            dest_select, dest_xy, {},
+            start_name=start_name, start_xy=start_xy, start_gps={},
+            api_key=gmaps_key
+        )
+    else:
+        st.info("ℹ️ **Vector Campus Map Mode**: Add `GOOGLE_MAPS_API_KEY` to Streamlit Secrets (`.streamlit/secrets.toml`) to activate live Google Maps satellite rendering.")
+        realtime_nav_html = render_realtime_gps_navigation_app(
+            dest_select, dest_xy, {},
+            start_name=start_name, start_xy=start_xy, start_gps={}
+        )
     components.html(realtime_nav_html, height=635, scrolling=False)
+
+    st.markdown("""
+    <div style="background: rgba(30, 41, 59, 0.9); border: 1.5px solid #38BDF8; padding: 14px 18px; border-radius: 12px; margin-top: 14px;">
+        <h4 style="color: #38BDF8; margin: 0 0 8px 0;">🏢 Outdoor-to-Indoor Navigation Flow</h4>
+        <p style="color: #CBD5E1; font-size: 13px; margin: 0 0 10px 0;">
+            GPS Geolocation provides outdoor route navigation across VIIT campus buildings. When you arrive at your target building, switch to the <b>🗺️ Interactive Floor Map</b> tab to view exact room-level architectural floor plans (1st–4th Floors).
+        </p>
+        <div style="font-size: 13px; font-weight: 700; color: #34D399;">
+            📍 GPS Outdoor Location ➔ 🏢 Campus Building ➔ 🏬 Floor Selection ➔ 🗺️ Official Floor Plan Map ➔ 📌 Target Room
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
 
 # ==============================================================================
 # TAB 2: AI ASSISTANT (Chatbot)
 # ==============================================================================
+# TAB 2: AI ASSISTANT (Voice & Text Chatbot)
+# ==============================================================================
 with tab_chat:
-    st.subheader("💬 Smart AI Campus Assistant")
-    st.write("Ask questions about official VIIT floor plans, room numbers, AKCNB, Vignan Library, or Aryabhatta Center.")
+    st.subheader("💬 AI Campus Assistant & Voice Input")
+    st.write("Ask questions about official VIIT floor plans, rooms, labs, library, or campus routes.")
 
-    st.write("**Quick Query Shortcuts:**")
-    q_cols = st.columns(4)
-    quick_query = None
-    if q_cols[0].button("📍 AKCNB Location?"):
-        quick_query = "Where is AKCNB?"
-    if q_cols[1].button("📚 Vignan Library?"):
-        quick_query = "Where is Vignan Library?"
-    if q_cols[2].button("🔬 D-32 Digital Comm Lab?"):
-        quick_query = "Where is D-32 Digital Communication Lab?"
-    if q_cols[3].button("💻 G-03 Aryabhatta Center?"):
-        quick_query = "Where is G-03 Aryabhatta Center for Computing?"
+    # Check for automatic Speech-to-Text query URL parameter
+    auto_voice_param = st.query_params.get("vq", None)
+    voice_query_text = None
+    if auto_voice_param and auto_voice_param.strip():
+        voice_query_text = auto_voice_param.strip()
+        st.query_params.clear()
 
-    for msg in st.session_state.messages:
+    st.write("**🎤 Sample Questions:**")
+    v_cols = st.columns(5)
+    voice_shortcut = None
+    if v_cols[0].button("📚 Where is library?"):
+        voice_shortcut = "Where is the library?"
+    if v_cols[1].button("🔬 Where is CSE Lab?"):
+        voice_shortcut = "Where is the CSE laboratory?"
+    if v_cols[2].button("🎭 Seminar Hall floor?"):
+        voice_shortcut = "Which floor is the seminar hall on?"
+    if v_cols[3].button("🏛️ Admin Office?"):
+        voice_shortcut = "Where is the administration office?"
+    if v_cols[4].button("🗺️ Show me the route"):
+        voice_shortcut = "Yes, show me the route."
+
+    for idx, msg in enumerate(st.session_state.messages):
         with st.chat_message(msg["role"]):
             st.markdown(msg["content"])
+            if msg["role"] == "assistant" and len(msg["content"]) > 10:
+                components.html(render_speech_synthesis_player(msg["content"], element_id=f"tts-{idx}"), height=42, scrolling=False)
 
-    user_input = st.chat_input("Ask about floor plans (e.g. 'Where is D-32?' or 'Which floor is Vignan Library on?')...")
-    target_query = quick_query or user_input
+    # Render microphone button directly INSIDE st.chat_input container [ Ask about floor plans... 🎤 ➤ ]
+    components.html(render_inside_input_mic_button(), height=0, scrolling=False)
+    user_input = st.chat_input("Ask about floor plans, rooms, routes...")
+    target_query = voice_query_text or voice_shortcut or user_input
 
     if target_query:
         st.session_state.messages.append({"role": "user", "content": target_query})
@@ -281,6 +329,7 @@ with tab_chat:
             with st.spinner("Searching official VIIT floor database..."):
                 ai_response = generate_campus_response(target_query, api_key=api_key)
                 st.markdown(ai_response)
+                components.html(render_speech_synthesis_player(ai_response, element_id=f"tts-live-{len(st.session_state.messages)}"), height=42, scrolling=False)
 
         st.session_state.messages.append({"role": "assistant", "content": ai_response})
 
