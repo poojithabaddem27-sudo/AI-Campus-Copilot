@@ -33,22 +33,6 @@ def get_gemini_api_key():
 
     return None
 
-def get_google_maps_api_key():
-    """Retrieves GOOGLE_MAPS_API_KEY safely from Streamlit Secrets or environment variables."""
-    try:
-        if hasattr(st, "secrets") and "GOOGLE_MAPS_API_KEY" in st.secrets and st.secrets["GOOGLE_MAPS_API_KEY"]:
-            key = str(st.secrets["GOOGLE_MAPS_API_KEY"]).strip()
-            if key and not key.startswith("YOUR_"):
-                return key
-    except Exception as e:
-        print(f"Streamlit secrets lookup note: {e}")
-
-    env_key = os.getenv("GOOGLE_MAPS_API_KEY")
-    if env_key and str(env_key).strip() and not str(env_key).startswith("YOUR_"):
-        return str(env_key).strip()
-
-    return None
-
 
 def get_genai_client(api_key=None):
     """Initializes and returns a Google GenAI Client if API key is present in Streamlit Secrets."""

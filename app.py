@@ -27,10 +27,9 @@ from utils.map_renderer import (
     render_custom_illustrated_campus_map,
     render_indoor_floor_map,
     render_realtime_gps_navigation_app,
-    render_google_maps_outdoor_app,
     render_official_viit_interactive_map
 )
-from utils.ai_helper import generate_campus_response, summarize_study_material, get_gemini_api_key, get_google_maps_api_key
+from utils.ai_helper import generate_campus_response, summarize_study_material, get_gemini_api_key
 from utils.voice_helper import render_inside_input_mic_button, render_speech_synthesis_player
 
 # 1. Page Configuration
@@ -153,7 +152,6 @@ with st.sidebar:
     
     st.subheader("⚙️ System Status")
     gemini_key = get_gemini_api_key()
-    gmaps_key = get_google_maps_api_key()
 
     if gemini_key:
         st.success("✅ AI Assistant Connected (Gemini Flash)", icon="⚡")
@@ -162,11 +160,6 @@ with st.sidebar:
 
     st.success("✅ Campus Database Available (VIIT Dataset)", icon="📚")
     st.success("✅ GPS Real-Time Device Location Ready", icon="📍")
-
-    if gmaps_key:
-        st.success("🗺️ Google Maps Satellite Navigation Connected", icon="🛰️")
-    else:
-        st.info("ℹ️ Running in Vector Campus Map Mode (Add GOOGLE_MAPS_API_KEY to secrets.toml for live Google Maps satellite).")
 
     st.divider()
 
@@ -250,20 +243,11 @@ with tab_route:
 
     st.markdown("---")
 
-    gmaps_key = get_google_maps_api_key()
-    if gmaps_key:
-        st.info("🗺️ **Google Maps Outdoor Navigation Active**: Satellite view enabled with real-time GPS tracking & walking ETA.")
-        realtime_nav_html = render_google_maps_outdoor_app(
-            dest_select, dest_xy, {},
-            start_name=start_name, start_xy=start_xy, start_gps={},
-            api_key=gmaps_key
-        )
-    else:
-        st.info("ℹ️ **Vector Campus Map Mode**: Add `GOOGLE_MAPS_API_KEY` to Streamlit Secrets (`.streamlit/secrets.toml`) to activate live Google Maps satellite rendering.")
-        realtime_nav_html = render_realtime_gps_navigation_app(
-            dest_select, dest_xy, {},
-            start_name=start_name, start_xy=start_xy, start_gps={}
-        )
+    # Render Official VIIT Interactive Digital Campus Map Component
+    realtime_nav_html = render_realtime_gps_navigation_app(
+        dest_select, dest_xy, {},
+        start_name=start_name, start_xy=start_xy, start_gps={}
+    )
     components.html(realtime_nav_html, height=635, scrolling=False)
 
     st.markdown("""
