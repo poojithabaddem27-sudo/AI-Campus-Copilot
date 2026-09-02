@@ -1,0 +1,223 @@
+{
+  "campus_info": {
+    "name": "NARVA Campus University",
+    "main_road": "Main Road to Narva",
+    "working_hours": "8:00 AM - 8:00 PM (Mon-Sat)",
+    "helpdesk_phone": "+1 (800) 555-NARVA",
+    "emergency_contact": "Security Gate (Main Entrance): Ext 100"
+  },
+  "locations": [
+    {
+      "id": "main-entrance",
+      "name": "Main Entrance",
+      "category": "Entrance & Gates",
+      "status": "Open",
+      "floor": "Ground Floor",
+      "block": "Main Road Entrance",
+      "description": "Primary campus entrance gate with orientation map board, security post, and visitor check-in.",
+      "timing": "24/7 Open",
+      "contact": "security@campus.edu",
+      "keywords": ["main entrance", "gate", "entrance", "front gate", "security gate"]
+    },
+    {
+      "id": "main-block",
+      "name": "Main Block",
+      "category": "Academic Block",
+      "status": "Open",
+      "floor": "Ground - 4th Floor",
+      "block": "Central Academic Plaza",
+      "description": "Central university building housing principal's office, administrative departments, dean's office, and main classrooms.",
+      "timing": "8:00 AM - 7:00 PM",
+      "contact": "mainblock@campus.edu",
+      "keywords": ["main block", "main building", "admin block", "principal office"]
+    },
+    {
+      "id": "pharmacy-block",
+      "name": "Pharmacy Block",
+      "category": "Academic Block",
+      "status": "Open",
+      "floor": "Ground - 3rd Floor",
+      "block": "North-West Wing",
+      "description": "College of Pharmaceutical Sciences, pharmacology testing labs, medicinal chemistry rooms, and courtyard.",
+      "timing": "8:30 AM - 5:30 PM",
+      "contact": "pharmacy@campus.edu",
+      "keywords": ["pharmacy block", "pharmacy", "pharmacy college", "pharma labs"]
+    },
+    {
+      "id": "cricket-ground",
+      "name": "Cricket Ground",
+      "category": "Sports & Recreation",
+      "status": "Open",
+      "floor": "Outdoor",
+      "block": "West Campus Loop",
+      "description": "Full-size oval green turf cricket pitch enclosed by the circular ring road, with sight screens and dugouts.",
+      "timing": "6:00 AM - 8:00 PM",
+      "contact": "sports@campus.edu",
+      "keywords": ["cricket ground", "cricket pitch", "cricket"]
+    },
+    {
+      "id": "football-ground",
+      "name": "Football Ground",
+      "category": "Sports & Recreation",
+      "status": "Open",
+      "floor": "Outdoor",
+      "block": "North Campus Boundary",
+      "description": "Full-size outdoor grass football stadium with goal posts, athletic track, and spectator seating.",
+      "timing": "5:30 AM - 8:30 PM",
+      "contact": "sports@campus.edu",
+      "keywords": ["football ground", "football", "soccer field"]
+    },
+    {
+      "id": "back-gate",
+      "name": "Back Gate",
+      "category": "Entrance & Gates",
+      "status": "Open",
+      "floor": "Ground Floor",
+      "block": "North-East Boundary",
+      "description": "Secondary campus entrance/exit gate connecting to northern access roads.",
+      "timing": "6:00 AM - 9:00 PM",
+      "contact": "security@campus.edu",
+      "keywords": ["back gate", "rear entrance", "north gate", "gate"]
+    },
+    {
+      "id": "cse-grounds",
+      "name": "CSE Grounds",
+      "category": "Sports & Open Spaces",
+      "status": "Open",
+      "floor": "Outdoor",
+      "block": "Adjacent to Computer Science Block",
+      "description": "Open lawn and grounds dedicated for Computer Science department events, student gatherings, and sports.",
+      "timing": "6:00 AM - 8:00 PM",
+      "contact": "cs.dept@campus.edu",
+      "keywords": ["cse grounds", "cs lawn", "computer science ground", "cse"]
+    },
+    {
+      "id": "dharithri-block",
+      "name": "Dharithri Block",
+      "category": "Academic Block",
+      "status": "Open",
+      "floor": "Ground - 3rd Floor",
+      "block": "Central Academic Complex",
+      "description": "Academic building hosting Environmental Sciences, Earth Sciences, and smart lecture rooms.",
+      "timing": "8:30 AM - 6:00 PM",
+      "contact": "dharithri@campus.edu",
+      "keywords": ["dharithri block", "dharithri", "earth science"]
+    },
+    {
+      "id": "sagara-block",
+      "name": "Sagara Block",
+      "category": "Academic Block",
+      "status": "Open",
+      "floor": "Ground - 3rd Floor",
+      "block": "Central Academic Complex",
+      "description": "Academic wing for Oceanography, Marine Sciences, and Research laboratories.",
+      "timing": "8:30 AM - 6:00 PM",
+      "contact": "sagara@campus.edu",
+      "keywords": ["sagara block", "sagara", "marine science"]
+    },
+    {
+      "id": "girls-hostel-mess",
+      "name": "Girls Hostel & Mess",
+      "category": "Hostels & Dining",
+      "status": "Open",
+      "floor": "Ground - 4th Floor",
+      "block": "North-West Residential Zone",
+      "description": "Residential hostel facility for female students with in-house dining mess, study lounge, and 24/7 security.",
+      "timing": "Residential 24/7",
+      "contact": "girlshostel@campus.edu",
+      "keywords": ["girls hostel & mess", "girls hostel", "girls mess", "hostel mess", "dining hall"]
+    },
+    {
+      "id": "canteen",
+      "name": "Canteen",
+      "category": "Dining & Food",
+      "status": "Open",
+      "floor": "Ground Floor",
+      "block": "Central Courtyard",
+      "description": "Central campus cafeteria serving hot meals, snacks, breakfast, beverages, tea, and coffee.",
+      "timing": "7:30 AM - 8:30 PM",
+      "contact": "canteen@campus.edu",
+      "keywords": ["canteen", "cafeteria", "mess", "food", "snacks", "coffee"]
+    },
+    {
+      "id": "parking-area",
+      "name": "Parking Area",
+      "category": "Entrance & Transport",
+      "status": "Open",
+      "floor": "Ground Floor",
+      "block": "Near Main Entrance & Faculty Wing",
+      "description": "Organized parking zone for two-wheelers, four-wheelers, staff cars, and visitor vehicles.",
+      "timing": "6:00 AM - 10:00 PM",
+      "contact": "parking@campus.edu",
+      "keywords": ["parking area", "parking", "faculty parking", "bike parking", "car parking"]
+    },
+    {
+      "id": "cricket-nets",
+      "name": "Cricket Nets",
+      "category": "Sports & Recreation",
+      "status": "Open",
+      "floor": "Outdoor",
+      "block": "Adjacent to Main Cricket Ground",
+      "description": "Enclosed practice nets with turf and cement pitches for cricket bowling and batting sessions.",
+      "timing": "6:00 AM - 7:30 PM",
+      "contact": "sports@campus.edu",
+      "keywords": ["cricket nets", "nets", "practice nets", "cricket practice"]
+    },
+    {
+      "id": "volleyball-basketball-courts",
+      "name": "Volleyball & Basketball Courts",
+      "category": "Sports & Recreation",
+      "status": "Open",
+      "floor": "Outdoor",
+      "block": "Near Main Entrance & Sports Zone",
+      "description": "Outdoor floodlit courts for volleyball and basketball matches and student sports practice.",
+      "timing": "6:00 AM - 8:00 PM",
+      "contact": "sports@campus.edu",
+      "keywords": ["volleyball & basketball courts", "volleyball court", "basketball court", "sports courts"]
+    },
+    {
+      "id": "facilities-block",
+      "name": "Facilities Block",
+      "category": "Administration & Utility",
+      "status": "Open",
+      "floor": "Ground - 2nd Floor",
+      "block": "East Boundary",
+      "description": "Maintenance office, electrical substation desk, estate management, and utility services.",
+      "timing": "8:30 AM - 5:30 PM",
+      "contact": "facilities@campus.edu",
+      "keywords": ["facilities block", "facilities", "estate office", "maintenance"]
+    },
+    {
+      "id": "atm-counter",
+      "name": "ATM Counter",
+      "category": "Amenities",
+      "status": "Open",
+      "floor": "Ground Floor",
+      "block": "Near Main Entrance",
+      "description": "24/7 Automated Teller Machine (ATM) located near the main entrance gate.",
+      "timing": "24/7 Open",
+      "contact": "helpdesk@campus.edu",
+      "keywords": ["atm counter", "atm", "cash machine", "bank"]
+    }
+  ],
+  "events": [
+    {
+      "id": "evt-101",
+      "title": "Inter-Department Cricket Championship",
+      "date": "September 18-20, 2026",
+      "time": "9:00 AM Onwards",
+      "location": "Cricket Ground & Cricket Nets",
+      "category": "Sports",
+      "description": "Annual campus cricket tournament held at the main Cricket Ground."
+    },
+    {
+      "id": "evt-102",
+      "title": "Annual Academic Project Exhibition",
+      "date": "October 8, 2026",
+      "time": "10:00 AM - 5:00 PM",
+      "location": "Main Block & Dharithri Block",
+      "category": "Academic",
+      "description": "Exhibition of capstone engineering, AI, and pharmacy projects."
+    }
+  ]
+}
