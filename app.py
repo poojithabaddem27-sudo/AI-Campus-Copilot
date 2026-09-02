@@ -321,22 +321,8 @@ with tab_route:
         dest_info = VIIT_CAMPUS_LOCATIONS.get(dest_select, VIIT_CAMPUS_LOCATIONS["Main Block"])
         dest_xy = (dest_info["x"], dest_info["y"])
 
-    col_btn1, col_btn2 = st.columns([1.6, 1.4])
-    with col_btn1:
-        if st.button("🚀 Find Route & Show Digital Campus Map", type="primary", use_container_width=True):
-            st.success(f"Showing Campus Route: **{start_name}** ➔ **{dest_select}**")
-    with col_btn2:
-        s_lat = s_info.get("lat", 17.70710) if 's_info' in locals() else 17.70710
-        s_lng = s_info.get("lng", 83.16750) if 's_info' in locals() else 83.16750
-        d_lat = dest_info.get("lat", 17.70825)
-        d_lng = dest_info.get("lng", 83.16782)
-        mappls_url = f"https://mappls.com/direction?start={s_lat},{s_lng}&destination={d_lat},{d_lng}"
-        st.link_button(
-            "🗺️ Open in Mappls (MapmyIndia)",
-            mappls_url,
-            use_container_width=True,
-            help="Open outdoor route on Mappls live maps"
-        )
+    if st.button("🚀 Find Route & Show Digital Campus Map", type="primary", use_container_width=True):
+        st.success(f"Showing Campus Route: **{start_name}** ➔ **{dest_select}**")
 
     st.markdown("---")
 

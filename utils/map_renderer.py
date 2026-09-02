@@ -543,7 +543,6 @@ def render_realtime_gps_navigation_app(destination_name, dest_xy, dest_gps=None,
                 <button class="btn btn-zoom" onclick="zoomIn()">➕ Zoom In</button>
                 <button class="btn btn-zoom" onclick="zoomOut()">➖ Zoom Out</button>
                 <button class="btn btn-zoom" onclick="resetMap()">🔄 Reset View</button>
-                <button class="btn btn-zoom" style="background: linear-gradient(135deg, #0284C7, #0D9488); color: white; border: none;" onclick="openMapplsRoute()">🗺️ Open in Mappls</button>
                 <input class="search-box-input" type="text" id="map-search" placeholder="🔍 Search campus location..." oninput="onSearchLocation(this.value)"/>
                 <div class="status-banner" id="nav-status"><span>🚩 Route: {start_name} ➔ {destination_name}</span></div>
             </div>
@@ -823,21 +822,6 @@ def render_realtime_gps_navigation_app(destination_name, dest_xy, dest_gps=None,
 
             function openFloorMapTab() {{
                 alert("Click on the '🗺️ Interactive Floor Map' tab above to view the detailed 1st-4th floor plans of Main Block!");
-            }}
-
-            function openMapplsRoute() {{
-                let sLat = 17.70710, sLng = 83.16750;
-                let dLat = 17.70825, dLng = 83.16782;
-                if (campusLocations[startName] && campusLocations[startName].lat) {{
-                    sLat = campusLocations[startName].lat;
-                    sLng = campusLocations[startName].lng;
-                }}
-                if (campusLocations[currentDestName] && campusLocations[currentDestName].lat) {{
-                    dLat = campusLocations[currentDestName].lat;
-                    dLng = campusLocations[currentDestName].lng;
-                }}
-                let url = "https://mappls.com/direction?start=" + sLat + "," + sLng + "&destination=" + dLat + "," + dLng;
-                window.open(url, "_blank");
             }}
 
             function updateLiveRoute(x, y) {{
