@@ -31,6 +31,7 @@ from utils.map_renderer import (
 )
 from utils.ai_helper import generate_campus_response, summarize_study_material, get_gemini_api_key
 from utils.voice_helper import render_inside_input_mic_button, render_speech_synthesis_player
+from utils.contact_helper import CAMPUS_CONTACTS, get_all_searchable_destinations, generate_step_by_step_navigation_help, format_quick_route_breadcrumb
 
 # 1. Page Configuration
 st.set_page_config(
@@ -133,6 +134,87 @@ st.markdown("""
         border-radius: 20px;
         display: inline-block;
     }
+
+    .contact-card {
+        background: #FFFFFF;
+        border: 1.5px solid #E2E8F0;
+        border-radius: 14px;
+        padding: 1.2rem;
+        margin-bottom: 1rem;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.04);
+        transition: transform 0.2s, box-shadow 0.2s;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        height: 100%;
+    }
+    .contact-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 18px rgba(37, 99, 235, 0.12);
+        border-color: #38BDF8;
+    }
+    .contact-header {
+        display: flex;
+        align-items: center;
+        gap: 0.7rem;
+        margin-bottom: 0.5rem;
+    }
+    .contact-title {
+        font-size: 1.05rem;
+        font-weight: 800;
+        color: #0F172A;
+    }
+    .contact-purpose {
+        font-size: 0.85rem;
+        color: #64748B;
+        line-height: 1.4;
+        margin-bottom: 0.8rem;
+        flex: 1;
+    }
+    .contact-phone {
+        font-size: 1.05rem;
+        font-weight: 800;
+        color: #0284C7;
+        margin-bottom: 0.8rem;
+        font-family: monospace;
+    }
+    .contact-call-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        background: linear-gradient(135deg, #10B981, #059669);
+        color: #FFFFFF !important;
+        text-decoration: none !important;
+        padding: 0.6rem 1.2rem;
+        border-radius: 8px;
+        font-weight: 700;
+        font-size: 0.9rem;
+        transition: all 0.2s;
+        text-align: center;
+    }
+    .contact-call-btn:hover {
+        background: linear-gradient(135deg, #059669, #047857);
+        transform: scale(1.02);
+        box-shadow: 0 4px 12px rgba(16, 185, 129, 0.35);
+    }
+    .help-guide-banner {
+        background: linear-gradient(135deg, #1E293B 0%, #0F172A 100%);
+        border: 1.5px solid #38BDF8;
+        border-radius: 14px;
+        padding: 1.4rem;
+        color: white;
+        margin-bottom: 1.5rem;
+    }
+    .help-step-box {
+        background: rgba(255, 255, 255, 0.06);
+        border-left: 4px solid #38BDF8;
+        border-radius: 8px;
+        padding: 0.8rem 1rem;
+        margin-bottom: 0.6rem;
+        font-size: 0.95rem;
+        color: #F8FAFC;
+    }
     </style>
 """, unsafe_allow_html=True)
 
@@ -195,12 +277,13 @@ st.markdown(f"""
 """, unsafe_allow_html=True)
 
 # 5. Multi-Tab Navigation
-tab_route, tab_chat, tab_dir, tab_floors, tab_study = st.tabs([
+tab_route, tab_chat, tab_dir, tab_floors, tab_study, tab_contact = st.tabs([
     "🧭 Campus Route Finder",
     "💬 AI Assistant",
     "📍 Campus Directory",
     "🗺️ Interactive Floor Map",
-    "📚 Study Helper"
+    "📚 Study Helper",
+    "📞 Contact & Navigation Help"
 ])
 
 # ==============================================================================
@@ -478,3 +561,124 @@ with tab_study:
                 summary_output = summarize_study_material(content_to_analyze, api_key=api_key)
                 st.markdown("---")
                 st.markdown(summary_output)
+
+# ==============================================================================
+# TAB 6: CONTACT & NAVIGATION HELP
+# ==============================================================================
+with tab_contact:
+    st.subheader("📞 Contact & Navigation Help")
+    st.write("Official campus telephone numbers, emergency hotlines, help desk assistance, and smart step-by-step route guidance.")
+
+    # 1. Quick Help Action Buttons Row
+    st.markdown("### ⚡ Quick Help")
+    q_col1, q_col2, q_col3, q_col4 = st.columns(4)
+    
+    with q_col1:
+        if st.button("📍 Where Am I?", use_container_width=True):
+            st.info("📍 **Where Am I?**: If browser location permission is enabled, your live device position is active in the **🧭 Campus Route Finder**. If not, your default reference location is the **Main Entrance Gate**.")
+            
+    with q_col2:
+        if st.button("🧭 How Do I Reach a Location?", use_container_width=True):
+            st.success("🧭 **How Do I Reach a Location?**: Use the **Need Help Finding Your Way?** section below or switch to the **🧭 Campus Route Finder** tab to view the live moving route!")
+            
+    with q_col3:
+        if st.button("📞 Contact Help Desk", use_container_width=True):
+            st.markdown("""
+            <div style="background: #0284C7; color: white; padding: 12px 16px; border-radius: 10px; margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between;">
+                <div>📍 <b>Navigation Help Desk:</b> <span style="font-family: monospace; font-size: 1.05rem;">+91 8639923152</span></div>
+                <a href="tel:+918639923152" style="background: #10B981; color: white; padding: 6px 14px; border-radius: 6px; text-decoration: none; font-weight: 700; font-size: 0.9rem;">📞 Call Now</a>
+            </div>
+            """, unsafe_allow_html=True)
+            
+    with q_col4:
+        if st.button("🚨 Emergency Help", use_container_width=True):
+            st.markdown("""
+            <div style="background: #DC2626; color: white; padding: 12px 16px; border-radius: 10px; margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between;">
+                <div>🚨 <b>24/7 Emergency Contact:</b> <span style="font-family: monospace; font-size: 1.05rem;">+91 9166399921</span></div>
+                <a href="tel:+919166399921" style="background: #FFFFFF; color: #DC2626; padding: 6px 14px; border-radius: 6px; text-decoration: none; font-weight: 800; font-size: 0.9rem;">📞 Call Now</a>
+            </div>
+            """, unsafe_allow_html=True)
+
+    st.markdown("---")
+
+    # 2. SMART NAVIGATION HELP: "Need Help Finding Your Way?"
+    st.markdown("### 🧭 Need Help Finding Your Way?")
+    st.write("Select your current starting point and your target destination to view instant route breadcrumbs and step-by-step guidance.")
+
+    all_destinations = get_all_searchable_destinations()
+    dest_labels = [d["label"] for d in all_destinations]
+    
+    col_h1, col_h2 = st.columns([1, 1])
+    with col_h1:
+        help_start = st.selectbox(
+            "📍 Select Current Location:",
+            ["Library", "Main Entrance"] + [n for n in sorted(list(VIIT_CAMPUS_LOCATIONS.keys())) if n not in ["Library", "Main Entrance"]],
+            key="help_start_sel"
+        )
+    with col_h2:
+        help_dest_idx = 0
+        for i, d in enumerate(all_destinations):
+            if "Exam Cell" in d["label"]:
+                help_dest_idx = i
+                break
+        help_dest_label = st.selectbox(
+            "🎯 Select Destination:",
+            dest_labels,
+            index=help_dest_idx,
+            key="help_dest_sel"
+        )
+
+    selected_dest_obj = all_destinations[dest_labels.index(help_dest_label)]
+
+    if st.button("🚀 Get Step-by-Step Navigation Guidance", type="primary", use_container_width=True):
+        breadcrumb = format_quick_route_breadcrumb(help_start, selected_dest_obj)
+        guidance_steps = generate_step_by_step_navigation_help(help_start, selected_dest_obj)
+        
+        st.success("Route Found ✅")
+        
+        st.markdown(f"""
+        <div class="help-guide-banner">
+            <div style="font-size: 1.15rem; font-weight: 800; color: #38BDF8; margin-bottom: 0.5rem;">
+                🚶 Route Path:
+            </div>
+            <div style="font-size: 1.05rem; color: #FFFFFF; font-weight: 600; margin-bottom: 0.8rem; background: rgba(56, 189, 248, 0.15); padding: 10px 14px; border-radius: 8px; border: 1px solid rgba(56, 189, 248, 0.3);">
+                {breadcrumb}
+            </div>
+            <div style="font-size: 0.9rem; color: #94A3B8; margin-bottom: 0.8rem;">
+                🏢 <b>Target Building:</b> {selected_dest_obj['building']} &nbsp;|&nbsp; 🏬 <b>Floor:</b> {selected_dest_obj['floor']} &nbsp;|&nbsp; 🚪 <b>Block:</b> {selected_dest_obj['block']}
+            </div>
+            <div style="margin-top: 0.8rem;">
+        """, unsafe_allow_html=True)
+        
+        for step in guidance_steps:
+            st.markdown(f"""<div class="help-step-box">{step}</div>""", unsafe_allow_html=True)
+            
+        st.markdown("</div></div>", unsafe_allow_html=True)
+        
+        st.info("💡 **Tip**: Switch to the **🧭 Campus Route Finder** tab to view the live animated blue moving route on the interactive campus map!")
+
+    st.markdown("---")
+
+    # 3. OFFICIAL CAMPUS CONTACT DIRECTORY
+    st.markdown("### 🏢 Official Campus Contacts")
+    st.caption("Official telephone numbers for campus help desks, security, transport, and emergency services. Tap 'Call Now' to call directly on mobile.")
+
+    contact_cols = st.columns(3)
+    for idx, c in enumerate(CAMPUS_CONTACTS):
+        with contact_cols[idx % 3]:
+            st.markdown(f"""
+            <div class="contact-card">
+                <div>
+                    <div class="contact-header">
+                        <span style="font-size: 1.6rem;">{c['icon']}</span>
+                        <div class="contact-title">{c['name']}</div>
+                    </div>
+                    <div class="contact-purpose">{c['purpose']}</div>
+                    <div style="font-size: 0.75rem; color: #94A3B8; font-weight: 600; text-transform: uppercase; margin-bottom: 0.3rem;">Available Hours: {c['hours']}</div>
+                    <div class="contact-phone">📞 {c['phone']}</div>
+                </div>
+                <a href="tel:{c['phone_raw']}" class="contact-call-btn">
+                    <span>📞 Call Now</span>
+                </a>
+            </div>
+            """, unsafe_allow_html=True)
