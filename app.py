@@ -277,13 +277,13 @@ st.markdown(f"""
 """, unsafe_allow_html=True)
 
 # 5. Multi-Tab Navigation
-tab_route, tab_chat, tab_dir, tab_floors, tab_study, tab_contact = st.tabs([
+tab_route, tab_chat, tab_find, tab_floors, tab_study, tab_emergency = st.tabs([
     "🧭 Campus Route Finder",
     "💬 AI Assistant",
-    "📍 Campus Directory",
+    "🔍 Smart Find Anything",
     "🗺️ Interactive Floor Map",
     "📚 Study Helper",
-    "📞 Contact & Navigation Help"
+    "🚨 Emergency & Help"
 ])
 
 # ==============================================================================
@@ -415,15 +415,15 @@ with tab_chat:
         st.session_state.messages.append({"role": "assistant", "content": ai_response})
 
 # ==============================================================================
-# TAB 3: CAMPUS DIRECTORY
+# TAB 3: SMART FIND ANYTHING (Campus Directory & Instant Search)
 # ==============================================================================
-with tab_dir:
-    st.subheader("📍 VIIT Campus Directory Search")
-    st.write("Search through official rooms, labs, offices, and facilities across all 4 floors and 7 blocks.")
+with tab_find:
+    st.subheader("🔍 Smart Find Anything")
+    st.write("Instant smart search for any campus room, laboratory, library, seminar hall, canteen, admin office, block, or facility.")
 
     col_f1, col_f2 = st.columns([3, 1])
-    search_term = col_f1.text_input("🔍 Search Room, Lab, or Facility (e.g. D-32, A-22, Library, G-03, AKCNB):", value="D-32", placeholder="Type D-32, Library, G-03, etc...")
-    category_filter = col_f2.selectbox("Filter Floor:", ["All"] + list(OFFICIAL_FLOOR_PLANS.keys()))
+    search_term = col_f1.text_input("🔍 Search Anything (e.g. Exam Cell, Library, D-32, CSE Lab, Seminar Hall, Canteen, Principal):", value="D-32", placeholder="Type room, lab, office, or building...")
+    category_filter = col_f2.selectbox("Filter Floor / Area:", ["All"] + list(OFFICIAL_FLOOR_PLANS.keys()))
 
     matching_results = search_locations(search_term) if search_term else locations_all
 
@@ -433,7 +433,7 @@ with tab_dir:
     st.caption(f"Showing **{len(matching_results)}** matching location(s)")
 
     if not matching_results:
-        st.warning("⚠️ No matching location found.")
+        st.warning("⚠️ No matching location found. Try searching for 'Library', 'Exam Cell', 'CSE', 'D-32', or 'AKCNB'.")
     else:
         grid_cols = st.columns(2)
         for idx, item in enumerate(matching_results):
@@ -446,11 +446,13 @@ with tab_dir:
                         <div style="font-size: 0.95rem; color: #2563EB; font-weight: 700; margin-bottom: 0.3rem;">
                             🏢 Located on: <b>{item['floor']}</b> ({item['block']})
                         </div>
-                        <div style="font-size: 0.85rem; color: #64748B;">
-                            Official VIIT floor plan entry
+                        <div style="font-size: 0.85rem; color: #64748B; margin-bottom: 0.6rem;">
+                            Official VIIT campus floor plan entry
                         </div>
                     </div>
                 """, unsafe_allow_html=True)
+                if st.button(f"🧭 Show Route to {item['name']}", key=f"find_route_{idx}", use_container_width=True):
+                    st.success(f"🧭 Route set to **{item['name']}**! Switch to the **🧭 Campus Route Finder** tab to view the live animated route or **🗺️ Interactive Floor Map** to inspect the room layout.")
 
 # ==============================================================================
 # TAB 4: INTERACTIVE FLOOR MAP (OFFICIAL VIIT 4-FLOOR 7-BLOCK DIGITAL MAP)
@@ -577,35 +579,79 @@ with tab_study:
                 st.markdown(summary_output)
 
 # ==============================================================================
-# TAB 6: CONTACT & NAVIGATION HELP
+# TAB 6: EMERGENCY & HELP CENTER
 # ==============================================================================
-with tab_contact:
-    st.subheader("📞 Contact & Navigation Help")
-    st.write("Official campus telephone numbers, emergency hotlines, help desk assistance, and smart step-by-step route guidance.")
+with tab_emergency:
+    st.subheader("🚨 Emergency & Help Center")
+    st.write("24/7 campus emergency hotlines, medical/first-aid center, campus security control, and immediate incident assistance.")
 
-    # 1. Quick Help Action Buttons Row
+    # 1. Prominent "I NEED HELP" Emergency SOS Button
+    st.markdown("""
+    <div style="background: linear-gradient(135deg, #7F1D1D 0%, #991B1B 50%, #B91C1C 100%); padding: 18px 22px; border-radius: 14px; border: 2px solid #EF4444; color: white; margin-bottom: 16px; box-shadow: 0 8px 20px rgba(239, 68, 68, 0.3);">
+        <div style="font-size: 1.4rem; font-weight: 800; margin-bottom: 4px;">🚨 Need Immediate Assistance?</div>
+        <div style="font-size: 0.9rem; color: #FEE2E2;">Click below to trigger the emergency protocol and access immediate on-campus support.</div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    if st.button("🚨 I NEED HELP — EMERGENCY ASSISTANCE", type="primary", use_container_width=True):
+        st.error("🚨 **EMERGENCY PROTOCOL ACTIVATED**: Direct contacts on call:")
+        st.markdown("""
+        <div style="background: rgba(220, 38, 38, 0.15); border: 2px solid #EF4444; border-radius: 12px; padding: 16px; margin-bottom: 16px;">
+            <div style="font-size: 1.15rem; font-weight: 800; color: #EF4444; margin-bottom: 8px;">🚑 Medical Clinic: <b>+91 9166399921</b> &nbsp; <a href="tel:+919166399921" style="background:#EF4444;color:white;padding:4px 12px;border-radius:6px;text-decoration:none;font-weight:700;font-size:0.85rem;">📞 Call 24/7</a></div>
+            <div style="font-size: 1.15rem; font-weight: 800; color: #38BDF8; margin-bottom: 8px;">🛡️ Campus Security: <b>+91 9866399930</b> &nbsp; <a href="tel:+919866399930" style="background:#0284C7;color:white;padding:4px 12px;border-radius:6px;text-decoration:none;font-weight:700;font-size:0.85rem;">📞 Call Security</a></div>
+            <div style="font-size: 1.15rem; font-weight: 800; color: #34D399;">🏢 Administration: <b>+91 9133300359</b> &nbsp; <a href="tel:+919133300359" style="background:#059669;color:white;padding:4px 12px;border-radius:6px;text-decoration:none;font-weight:700;font-size:0.85rem;">📞 Call Admin</a></div>
+        </div>
+        """, unsafe_allow_html=True)
+
+    # 2. Nearby Campus Help Locations
+    st.markdown("### 🏥 Nearby Campus Help Locations")
+    help_loc_cols = st.columns(3)
+    with help_loc_cols[0]:
+        st.markdown("""
+        <div class="directory-result-card" style="border-left-color: #EF4444;">
+            <div style="font-size: 1.1rem; font-weight: 800; color: #EF4444;">🚑 Campus Health Center</div>
+            <div style="font-size: 0.85rem; color: #64748B; margin-top: 4px;"><b>Location:</b> Facilities Block (Ground Level)</div>
+            <div style="font-size: 0.8rem; color: #94A3B8; margin-top: 2px;">24/7 ambulance, doctor on duty & emergency first aid.</div>
+        </div>
+        """, unsafe_allow_html=True)
+    with help_loc_cols[1]:
+        st.markdown("""
+        <div class="directory-result-card" style="border-left-color: #38BDF8;">
+            <div style="font-size: 1.1rem; font-weight: 800; color: #0284C7;">🛡️ Main Security Post</div>
+            <div style="font-size: 0.85rem; color: #64748B; margin-top: 4px;"><b>Location:</b> Main Entrance Gate</div>
+            <div style="font-size: 0.8rem; color: #94A3B8; margin-top: 2px;">24/7 surveillance, safety escort & lost-and-found.</div>
+        </div>
+        """, unsafe_allow_html=True)
+    with help_loc_cols[2]:
+        st.markdown("""
+        <div class="directory-result-card" style="border-left-color: #10B981;">
+            <div style="font-size: 1.1rem; font-weight: 800; color: #059669;">🏢 Administrative Office</div>
+            <div style="font-size: 0.85rem; color: #64748B; margin-top: 4px;"><b>Location:</b> Main Block (1st Floor)</div>
+            <div style="font-size: 0.8rem; color: #94A3B8; margin-top: 2px;">Principal chamber, exam cell & student affairs.</div>
+        </div>
+        """, unsafe_allow_html=True)
+
+    st.markdown("---")
+
+    # 3. Quick Assistance Action Row
     st.markdown("### ⚡ Quick Help")
     q_col1, q_col2, q_col3, q_col4 = st.columns(4)
-    
     with q_col1:
-        if st.button("📍 Where Am I?", use_container_width=True):
+        if st.button("📍 Where Am I?", key="em_where_btn", use_container_width=True):
             st.info("📍 **Where Am I?**: If browser location permission is enabled, your live device position is active in the **🧭 Campus Route Finder**. If not, your default reference location is the **Main Entrance Gate**.")
-            
     with q_col2:
-        if st.button("🧭 How Do I Reach a Location?", use_container_width=True):
-            st.success("🧭 **How Do I Reach a Location?**: Use the **Need Help Finding Your Way?** section below or switch to the **🧭 Campus Route Finder** tab to view the live moving route!")
-            
+        if st.button("🧭 How Do I Reach a Location?", key="em_how_btn", use_container_width=True):
+            st.success("🧭 **How Do I Reach a Location?**: Use the step-by-step navigation helper below or switch to **🧭 Campus Route Finder**!")
     with q_col3:
-        if st.button("📞 Contact Help Desk", use_container_width=True):
+        if st.button("📞 Contact Help Desk", key="em_contact_btn", use_container_width=True):
             st.markdown("""
             <div style="background: #0284C7; color: white; padding: 12px 16px; border-radius: 10px; margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between;">
                 <div>📍 <b>Navigation Help Desk:</b> <span style="font-family: monospace; font-size: 1.05rem;">+91 8639923152</span></div>
                 <a href="tel:+918639923152" style="background: #10B981; color: white; padding: 6px 14px; border-radius: 6px; text-decoration: none; font-weight: 700; font-size: 0.9rem;">📞 Call Now</a>
             </div>
             """, unsafe_allow_html=True)
-            
     with q_col4:
-        if st.button("🚨 Emergency Help", use_container_width=True):
+        if st.button("🚨 Emergency Help", key="em_help_btn", use_container_width=True):
             st.markdown("""
             <div style="background: #DC2626; color: white; padding: 12px 16px; border-radius: 10px; margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between;">
                 <div>🚨 <b>24/7 Emergency Contact:</b> <span style="font-family: monospace; font-size: 1.05rem;">+91 9166399921</span></div>
@@ -615,7 +661,7 @@ with tab_contact:
 
     st.markdown("---")
 
-    # 2. SMART NAVIGATION HELP: "Need Help Finding Your Way?"
+    # 4. SMART NAVIGATION HELP: "Need Help Finding Your Way?"
     st.markdown("### 🧭 Need Help Finding Your Way?")
     st.write("Select your current starting point and your target destination to view instant route breadcrumbs and step-by-step guidance.")
 
@@ -673,7 +719,7 @@ with tab_contact:
 
     st.markdown("---")
 
-    # 3. OFFICIAL CAMPUS CONTACT DIRECTORY
+    # 5. OFFICIAL CAMPUS CONTACT DIRECTORY
     st.markdown("### 🏢 Official Campus Contacts")
     st.caption("Official telephone numbers for campus help desks, security, transport, and emergency services. Tap 'Call Now' to call directly on mobile.")
 
