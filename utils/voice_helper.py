@@ -8,11 +8,13 @@ def render_inside_input_mic_button():
     DIRECTLY INSIDE Streamlit's st.chat_input box:
     [ Ask about floor plans, rooms, routes...          🎤  ➤ ]
 
-    Behavior:
-    - Zero separate Voice Assistant section or transcript boxes.
-    - Zero default "Processing AI answer..." on page load.
-    - Click 🎤 -> Listening (🔴) -> Transcribes speech into input field -> Auto-submits ONCE to existing AI assistant.
-    - Graceful fallback for permission denied or unsupported browsers.
+    Features:
+    - Compatible with Google Chrome and Microsoft Edge (Web Speech API).
+    - Asks for browser microphone permission normally.
+    - Shows "🎤 Listening... Speak now" visual badge when active.
+    - Accurately inserts recognized speech into the React-controlled chat input field.
+    - Automatically triggers submission to the existing Gemini AI Assistant.
+    - Handles permission denial gracefully.
     """
     return """
     <!DOCTYPE html>
@@ -25,6 +27,22 @@ def render_inside_input_mic_button():
     </head>
     <body>
         <script>
+            function setReactInputValue(inputElem, val) {
+                try {
+                    const proto = window.parent.HTMLTextAreaElement.prototype;
+                    const descriptor = Object.getOwnPropertyDescriptor(proto, 'value');
+                    if (descriptor && descriptor.set) {
+                        descriptor.set.call(inputElem, val);
+                    } else {
+                        inputElem.value = val;
+                    }
+                    inputElem.dispatchEvent(new window.parent.Event('input', { bubbles: true }));
+                    inputElem.dispatchEvent(new window.parent.Event('change', { bubbles: true }));
+                } catch(e) {
+                    inputElem.value = val;
+                }
+            }
+
             function attachMicToChatInput() {
                 try {
                     const parentDoc = window.parent.document;
@@ -37,13 +55,36 @@ def render_inside_input_mic_button():
                         textarea.style.paddingRight = '82px';
                     }
 
+                    // Create Floating Status Badge: "🎤 Listening... Speak now"
+                    let statusBadge = parentDoc.getElementById('voice-status-badge');
+                    if (!statusBadge) {
+                        statusBadge = parentDoc.createElement('div');
+                        statusBadge.id = 'voice-status-badge';
+                        statusBadge.style.position = 'absolute';
+                        statusBadge.style.top = '-36px';
+                        statusBadge.style.left = '12px';
+                        statusBadge.style.background = 'linear-gradient(135deg, #EF4444, #DC2626)';
+                        statusBadge.style.color = '#FFFFFF';
+                        statusBadge.style.padding = '5px 14px';
+                        statusBadge.style.borderRadius = '20px';
+                        statusBadge.style.fontSize = '12px';
+                        statusBadge.style.fontWeight = '700';
+                        statusBadge.style.boxShadow = '0 4px 14px rgba(239, 68, 68, 0.4)';
+                        statusBadge.style.zIndex = '999';
+                        statusBadge.style.display = 'none';
+                        statusBadge.style.alignItems = 'center';
+                        statusBadge.style.gap = '6px';
+                        statusBadge.innerHTML = '🎤 Listening... Speak now';
+                        chatContainer.appendChild(statusBadge);
+                    }
+
                     const micBtn = parentDoc.createElement('button');
                     micBtn.id = 'attached-chat-mic';
                     micBtn.type = 'button';
                     micBtn.title = 'Click 🎤 to speak your question';
                     micBtn.innerHTML = '🎤';
                     
-                    // Style microphone button directly inside the input container right before Send button (➤)
+                    // Style microphone button inside input container right before Send (➤)
                     micBtn.style.position = 'absolute';
                     micBtn.style.right = '48px';
                     micBtn.style.bottom = '8px';
@@ -72,42 +113,45 @@ def render_inside_input_mic_button():
 
                     chatContainer.appendChild(micBtn);
 
-                    // Setup Speech Recognition
-                    let recognition = null;
-                    let isListening = false;
-                    let finalSpeech = "";
-                    let isSubmitting = false;
+                    // Setup Web Speech Recognition
+                    const SpeechRec = window.parent.SpeechRecognition ||
+                                      window.parent.webkitSpeechRecognition ||
+                                      window.SpeechRecognition ||
+                                      window.webkitSpeechRecognition;
 
-                    if ('SpeechRecognition' in window.parent || 'webkitSpeechRecognition' in window.parent) {
-                        const SpeechRecognition = window.parent.SpeechRecognition || window.parent.webkitSpeechRecognition;
-                        recognition = new SpeechRecognition();
+                    if (SpeechRec) {
+                        const recognition = new SpeechRec();
                         recognition.continuous = false;
                         recognition.interimResults = true;
                         recognition.lang = 'en-US';
 
+                        let isListening = false;
+                        let recognizedText = '';
+
                         recognition.onstart = function() {
                             isListening = true;
-                            isSubmitting = false;
+                            recognizedText = '';
                             micBtn.style.background = 'rgba(239, 68, 68, 0.25)';
                             micBtn.style.borderColor = '#EF4444';
                             micBtn.style.color = '#F87171';
                             micBtn.innerHTML = '🔴';
-                            micBtn.title = 'Listening... Speak now';
+                            micBtn.title = '🎤 Listening... Speak now';
+                            if (statusBadge) statusBadge.style.display = 'flex';
                         };
 
                         recognition.onresult = function(e) {
-                            let interim = '';
+                            let interimTranscript = '';
+                            let finalTranscript = '';
                             for (let i = e.resultIndex; i < e.results.length; ++i) {
                                 if (e.results[i].isFinal) {
-                                    finalSpeech += e.results[i][0].transcript;
+                                    finalTranscript += e.results[i][0].transcript;
                                 } else {
-                                    interim += e.results[i][0].transcript;
+                                    interimTranscript += e.results[i][0].transcript;
                                 }
                             }
-                            let currentText = finalSpeech || interim;
-                            if (textarea && currentText) {
-                                textarea.value = currentText;
-                                textarea.dispatchEvent(new Event('input', { bubbles: true }));
+                            recognizedText = (finalTranscript || interimTranscript).trim();
+                            if (textarea && recognizedText) {
+                                setReactInputValue(textarea, recognizedText);
                             }
                         };
 
@@ -117,9 +161,11 @@ def render_inside_input_mic_button():
                             micBtn.style.borderColor = 'rgba(56, 189, 248, 0.3)';
                             micBtn.style.color = '#38BDF8';
                             micBtn.innerHTML = '🎤';
+                            micBtn.title = 'Click 🎤 to speak your question';
+                            if (statusBadge) statusBadge.style.display = 'none';
 
                             if (e.error === 'not-allowed' || e.error === 'permission-denied') {
-                                alert("Microphone access blocked. Please grant microphone permission in your browser address bar.");
+                                alert("Microphone permission was denied. Please allow microphone access in your browser address bar.");
                             } else if (e.error !== 'no-speech') {
                                 console.warn("Speech recognition error:", e.error);
                             }
@@ -131,20 +177,31 @@ def render_inside_input_mic_button():
                             micBtn.style.borderColor = 'rgba(56, 189, 248, 0.3)';
                             micBtn.style.color = '#38BDF8';
                             micBtn.innerHTML = '🎤';
+                            micBtn.title = 'Click 🎤 to speak your question';
+                            if (statusBadge) statusBadge.style.display = 'none';
 
-                            if (finalSpeech && finalSpeech.trim() && !isSubmitting) {
-                                isSubmitting = true;
-                                const textToSubmit = finalSpeech.trim();
-                                finalSpeech = "";
+                            if (textarea && recognizedText && recognizedText.trim()) {
+                                setReactInputValue(textarea, recognizedText.trim());
+                                textarea.focus();
 
-                                // Submit ONCE to parent window URL parameter for Streamlit execution
-                                try {
-                                    const parentUrl = new URL(window.parent.location.href);
-                                    parentUrl.searchParams.set("vq", textToSubmit);
-                                    window.parent.location.href = parentUrl.href;
-                                } catch(err) {
-                                    console.error("Auto submission error:", err);
-                                }
+                                // Automatically trigger submission to existing Gemini AI assistant
+                                setTimeout(function() {
+                                    const submitBtn = chatContainer.querySelector('button[data-testid="stChatInputSubmitButton"]') ||
+                                                      chatContainer.querySelector('button:not(#attached-chat-mic)');
+                                    if (submitBtn && !submitBtn.disabled) {
+                                        submitBtn.click();
+                                    } else {
+                                        const enterEvt = new window.parent.KeyboardEvent('keydown', {
+                                            key: 'Enter',
+                                            code: 'Enter',
+                                            keyCode: 13,
+                                            which: 13,
+                                            bubbles: true,
+                                            cancelable: true
+                                        });
+                                        textarea.dispatchEvent(enterEvt);
+                                    }
+                                }, 150);
                             }
                         };
 
@@ -152,14 +209,13 @@ def render_inside_input_mic_button():
                             if (isListening) {
                                 recognition.stop();
                             } else {
-                                finalSpeech = "";
-                                isSubmitting = false;
+                                recognizedText = '';
                                 recognition.start();
                             }
                         };
                     } else {
                         micBtn.onclick = function() {
-                            alert("Voice input is not supported in this browser. Please use Chrome, Edge, or Safari.");
+                            alert("Voice input is not supported in this browser. Please use Chrome or Edge, or type your question.");
                         };
                     }
                 } catch(err) {
@@ -168,7 +224,7 @@ def render_inside_input_mic_button():
             }
 
             // Run attachment polling
-            setInterval(attachMicToChatInput, 400);
+            setInterval(attachMicToChatInput, 350);
         </script>
     </body>
     </html>
