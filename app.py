@@ -215,6 +215,42 @@ st.markdown("""
         font-size: 0.95rem;
         color: #F8FAFC;
     }
+    .info-guide-card {
+        background: rgba(30, 41, 59, 0.7);
+        border: 1.5px solid rgba(56, 189, 248, 0.25);
+        border-radius: 14px;
+        padding: 1.3rem;
+        margin-bottom: 1.1rem;
+        box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
+        transition: transform 0.2s, border-color 0.2s;
+    }
+    .info-guide-card:hover {
+        transform: translateY(-2px);
+        border-color: #38BDF8;
+    }
+    .info-card-header {
+        font-size: 1.2rem;
+        font-weight: 800;
+        color: #38BDF8;
+        margin-bottom: 0.8rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    .info-card-section-label {
+        font-size: 0.75rem;
+        font-weight: 800;
+        color: #94A3B8;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        margin-bottom: 0.2rem;
+    }
+    .info-card-text {
+        font-size: 0.95rem;
+        color: #E2E8F0;
+        line-height: 1.45;
+        margin-bottom: 0.75rem;
+    }
     </style>
 """, unsafe_allow_html=True)
 
@@ -277,13 +313,14 @@ st.markdown(f"""
 """, unsafe_allow_html=True)
 
 # 5. Multi-Tab Navigation
-tab_route, tab_chat, tab_find, tab_floors, tab_study, tab_emergency = st.tabs([
+tab_route, tab_chat, tab_find, tab_floors, tab_study, tab_emergency, tab_info = st.tabs([
     "🧭 Campus Route Finder",
     "💬 AI Assistant",
     "🔍 Smart Find Anything",
     "🗺️ Interactive Floor Map",
     "📚 Study Helper",
-    "🚨 Emergency & Help"
+    "🚨 Emergency & Help",
+    "ℹ️ INFO"
 ])
 
 # ==============================================================================
@@ -728,3 +765,138 @@ with tab_emergency:
                 </a>
             </div>
             """, unsafe_allow_html=True)
+
+# ==============================================================================
+# TAB 7: INFO / USER GUIDE
+# ==============================================================================
+with tab_info:
+    st.subheader("ℹ️ AI Campus Copilot – Info & Guide")
+    st.markdown("""
+    <div style="font-size: 1.05rem; color: #CBD5E1; margin-bottom: 1.5rem; line-height: 1.6; background: rgba(30, 41, 59, 0.6); padding: 16px 20px; border-radius: 12px; border-left: 4px solid #38BDF8;">
+        AI Campus Copilot is a smart campus assistant designed to help students and visitors find places, get campus information, navigate the campus, and access useful assistance from one platform.
+    </div>
+    """, unsafe_allow_html=True)
+
+    info_col1, info_col2 = st.columns(2)
+
+    with info_col1:
+        # Card 1: Campus Route Finder
+        st.markdown("""
+        <div class="info-guide-card">
+            <div class="info-card-header">
+                📍 Campus Route Finder
+            </div>
+            <div class="info-card-section-label">How to use:</div>
+            <div class="info-card-text">
+                Select your starting location and destination, then find the route.
+            </div>
+            <div class="info-card-section-label">How it helps you:</div>
+            <div class="info-card-text">
+                Shows the route and walking distance, helping you reach your destination easily and reducing navigation confusion.
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+
+        # Card 3: Smart Find Anything
+        st.markdown("""
+        <div class="info-guide-card">
+            <div class="info-card-header">
+                🔎 Smart Find Anything
+            </div>
+            <div class="info-card-section-label">How to use:</div>
+            <div class="info-card-text">
+                Search for any classroom, lab, department, office, facility, or other campus location.
+            </div>
+            <div class="info-card-section-label">How it helps you:</div>
+            <div class="info-card-text">
+                Helps you quickly find the information you need and locate the required place without confusion.
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+
+        # Card 5: Study Helper
+        st.markdown("""
+        <div class="info-guide-card">
+            <div class="info-card-header">
+                📚 Study Helper
+            </div>
+            <div class="info-card-section-label">How to use:</div>
+            <div class="info-card-text">
+                Enter your study-related question or topic.
+            </div>
+            <div class="info-card-section-label">How it helps you:</div>
+            <div class="info-card-text">
+                Provides useful assistance for study-related queries.
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+
+    with info_col2:
+        # Card 2: AI Assistant
+        st.markdown("""
+        <div class="info-guide-card">
+            <div class="info-card-header">
+                🤖 AI Assistant
+            </div>
+            <div class="info-card-section-label">How to use:</div>
+            <div class="info-card-text">
+                Type or ask a campus-related question in the AI Assistant.
+            </div>
+            <div class="info-card-section-label">How it helps you:</div>
+            <div class="info-card-text" style="margin-bottom: 0.5rem;">
+                Provides quick answers to campus-related questions without requiring you to search manually or ask someone for directions.
+            </div>
+            <div style="font-size: 0.8rem; color: #94A3B8; background: rgba(15, 23, 42, 0.6); padding: 8px 12px; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.08);">
+                <span style="font-weight: 700; color: #38BDF8;">Example questions:</span><br>
+                • Where is the library?<br>
+                • Where is my classroom?<br>
+                • Which floor is this department on?
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+
+        # Card 4: Interactive Floor Map
+        st.markdown("""
+        <div class="info-guide-card">
+            <div class="info-card-header">
+                🗺️ Interactive Floor Map
+            </div>
+            <div class="info-card-section-label">How to use:</div>
+            <div class="info-card-text">
+                Select the required floor and explore the digital map.
+            </div>
+            <div class="info-card-section-label">How it helps you:</div>
+            <div class="info-card-text">
+                Helps you visually understand where classrooms and facilities are located on each floor.
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+
+        # Card 6: Emergency & Help
+        st.markdown("""
+        <div class="info-guide-card">
+            <div class="info-card-header">
+                🆘 Emergency & Help
+            </div>
+            <div class="info-card-section-label">How to use:</div>
+            <div class="info-card-text">
+                Open the section and select the help or emergency information you need.
+            </div>
+            <div class="info-card-section-label">How it helps you:</div>
+            <div class="info-card-text">
+                Provides quick access to important help and emergency information when required.
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+
+    # Bottom Tip Highlight
+    st.markdown("""
+    <div style="background: linear-gradient(135deg, rgba(14, 165, 233, 0.15) 0%, rgba(30, 41, 59, 0.8) 100%); border: 1.5px solid #38BDF8; border-radius: 14px; padding: 18px 22px; margin-top: 1rem; box-shadow: 0 4px 16px rgba(14, 165, 233, 0.15);">
+        <div style="font-size: 1.1rem; font-weight: 800; color: #38BDF8; margin-bottom: 4px;">
+            💡 New here?
+        </div>
+        <div style="font-size: 0.95rem; color: #F1F5F9;">
+            Start with <b>"Smart Find Anything"</b> or <b>"AI Assistant"</b> to quickly find what you need.
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
